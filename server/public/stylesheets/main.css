@@ -57,8 +57,7 @@ button[disabled]{
     background-color: #cccccc;
 }
 
-
-#log-panel {
+#incident-panel {
     overflow: auto;
     width: 100%;
     height: 100%;
@@ -66,31 +65,54 @@ button[disabled]{
     padding: 10px;
 }
 
-.log-level {
+.incident-type {
     width: 70px;
     float: left;
 }
 
-.last-level {
-    float: left;
-    padding: 14px;
-    font-weight: 600;
-}
-
-.log-msg {
-    width: calc(100% - 70px);
+.incident-descr {
+    width: calc(100% - 140px);
     float: right;
 }
-.DEBUG {
+
+.incident-show-detail {
+    float: right;
+    width: 70px;
+}
+
+.detail-panel {
+    z-index: 3;
+    background: white;
+}
+
+.detail-background {
+    z-index: 2;
+
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    background: rgba(0,0,0,0.5);
+}
+
+.Heating {
     color: grey;
 }
-.INFO {
+
+.Water {
     color: black;
 }
-.WARN {
+
+.Elevator {
     color: darkgoldenrod;
 }
-.ERROR {
+
+.Garage {
+    color: darkred;
+}
+
+.Other {
     color: darkred;
 }
 

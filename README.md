@@ -10,16 +10,16 @@ This is an example application showing how you can integrate a Play project with
 
 It's about an automatic process that can be started manually (button). But it should run only once at a time.
 
-So only one actor (AdapterActor) will run the process and make sure, that the process is only run once at a time.
+So only one actor (IncidentActor) will run the process and make sure, that the process is only run once at a time.
 
 The web-sockets are created according to the example.
 
-Each client sees the LogEntries of the last 'Adapter process' (LogReport) - or if the process is running - each LogEntry right away.
+Each client sees the LogEntries of the last 'Incident process' (LogReport) - or if the process is running - each LogEntry right away.
 
 The Binding.scala takes care of:
 * show the LogEntries
-* disable the 'Run Adapter' button
-* show the last LogLevel of the Adapter Process
+* disable the 'Run Incident' button
+* show the last LogLevel of the Incident Process
 
 ## Run the application
 ```shell

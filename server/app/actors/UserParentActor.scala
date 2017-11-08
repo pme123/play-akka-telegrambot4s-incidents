@@ -2,7 +2,7 @@ package actors
 
 import javax.inject.Inject
 
-import actors.UserActor.CreateAdapter
+import actors.UserActor.CreateIncident
 import akka.actor._
 import akka.event.LoggingReceive
 import akka.stream.scaladsl._
@@ -32,7 +32,7 @@ class UserParentActor @Inject()(childFactory: UserActor.Factory,
       val name = s"userActor-$id"
       log.info(s"Creating initiator actor $name")
       val child: ActorRef = injectedChild(childFactory(id), name)
-      val future = (child ? CreateAdapter(id)).mapTo[Flow[JsValue, JsValue, _]]
+      val future = (child ? CreateIncident(id)).mapTo[Flow[JsValue, JsValue, _]]
       pipe(future) to sender()
   }
 }

@@ -6,23 +6,73 @@ import play.api.libs.json.OFormat
 /**
   * all needed messages for server-client communication.
   */
-sealed trait AdapterMsg
+sealed trait IncidentMsg
 
-object AdapterMsg {
+object IncidentMsg {
+
+  case class NewIncident(incident: Incident) extends IncidentMsg
+
+  case class IncidentHistory(incidents: Seq[Incident]) extends IncidentMsg
+
+  case object KeepAliveMsg extends IncidentMsg
+
   // marshalling and unmarshalling
-  // with json.validate[AdapterMsg] or Json.parse(adapterMsg)
-  // this line is enough with this library - as AdapterMsg is a sealed trait
-  implicit val jsonFormat: OFormat[AdapterMsg] = derived.oformat[AdapterMsg]()
+  // with json.validate[IncidentMsg] or Json.parse(incidentMsg)
+  // this line is enough with this library - as IncidentMsg is a sealed trait
+  implicit val jsonFormat: OFormat[IncidentMsg] = derived.oformat[IncidentMsg]()
 }
 
-case class RunAdapter(userName: String = "Anonymous") extends AdapterMsg
+case class Incident(incidentType: IncidentType, descr: String, assets: List[Asset]) {
+  require(descr.length > 4)
+}
 
-case class AdapterRunning(logReport: LogReport) extends AdapterMsg
+object Incident {
+  implicit val jsonFormat: OFormat[Incident] = derived.oformat[Incident]()
 
-case class AdapterNotRunning(logReport: Option[LogReport]) extends AdapterMsg
+}
 
-case class LogEntryMsg(logEntry: LogEntry) extends AdapterMsg
+sealed trait IncidentType {
+  def name: String
+}
 
-case class RunFinished(logReport: LogReport) extends AdapterMsg
+object IncidentType {
 
-case object KeepAliveMsg extends AdapterMsg
+  case object Heating extends IncidentType {
+    val name = "Heating"
+  }
+
+  case object Water extends IncidentType {
+    val name = "Water"
+  }
+
+  case object Elevator extends IncidentType {
+    val name = "Elevator"
+  }
+
+  case object Garage extends IncidentType {
+    val name = "Garage"
+  }
+
+  case object Other extends IncidentType {
+    val name = "Other"
+  }
+
+  def from(name: String): IncidentType = name match {
+    case Heating.name => Heating
+    case Water.name => Water
+    case Elevator.name => Elevator
+    case Garage.name => Garage
+    case Other.name => Other
+    case other => throw new IllegalArgumentException(s"Unsupported IncidentType: $other")
+  }
+
+  implicit val jsonFormat: OFormat[IncidentType] = derived.oformat[IncidentType]()
+
+}
+
+case class Asset(fileId: String, path: String)
+
+object Asset {
+  implicit val jsonFormat: OFormat[Asset] = derived.oformat[Asset]()
+
+}

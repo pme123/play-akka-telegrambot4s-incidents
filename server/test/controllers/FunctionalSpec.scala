@@ -2,15 +2,15 @@ package controllers
 
 import java.util.concurrent.ArrayBlockingQueue
 
-import play.shaded.ahc.org.asynchttpclient.AsyncHttpClient
+import org.awaitility.Awaitility._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play._
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.test.{Helpers, TestServer, WsTestClient}
-import org.awaitility.Awaitility._
 import play.api.libs.json._
-import shared.LogLevel.INFO
+import play.api.test.{Helpers, TestServer, WsTestClient}
+import play.shaded.ahc.org.asynchttpclient.AsyncHttpClient
+import shared.IncidentMsg.{Incident, IncidentHistory}
 import shared._
 
 import scala.compat.java8.FutureConverters
@@ -72,17 +72,13 @@ class FunctionalSpec extends PlaySpec with ScalaFutures {
           await().until(() => webSocket.isOpen && queue.peek() != null)
           val input: String = queue.take()
           val json:JsValue = Json.parse(input)
-          json.validate[AdapterMsg] match {
-            case JsSuccess(AdapterNotRunning(None), _) => // ok
+          json.validate[IncidentMsg] match {
+            case JsSuccess(_: IncidentHistory, _) => // ok
             case other => fail(s"Unexpected result: $other")
           }
-          // run Adapter
-          webSocket.sendMessage(Json.toJson(RunAdapter("tester")).toString())
-          Json.parse(queue.take()).validate[AdapterMsg] match {
-            case JsSuccess(LogEntryMsg(LogEntry(INFO, msg, None)), _) => // ok
-              msg must startWith("Demo Adapter Process started at ")
-            case other => fail(s"Unexpected result: $other")
-          }
+          // run Incident
+          webSocket.sendMessage(Json.toJson(Incident(IncidentType.Heating, "test incident")).toString())
+
         }
       }
     }

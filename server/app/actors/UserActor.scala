@@ -2,8 +2,8 @@ package actors
 
 import javax.inject._
 
-import actors.AdapterActor.{SubscribeAdapter, UnSubscribeAdapter}
-import actors.UserActor.CreateAdapter
+import actors.IncidentActor.{SubscribeIncident, UnSubscribeIncident}
+import actors.UserActor.CreateIncident
 import akka.actor._
 import akka.event.{LogMarker, MarkerLoggingAdapter}
 import akka.stream._
@@ -12,6 +12,7 @@ import akka.util.Timeout
 import akka.{Done, NotUsed}
 import com.google.inject.assistedinject.Assisted
 import play.api.libs.json._
+import shared.IncidentMsg.KeepAliveMsg
 import shared._
 
 import scala.concurrent.duration._
@@ -24,10 +25,10 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   * Original see here: https://github.com/playframework/play-scala-websocket-example
   *
-  * @param adapterActor the actor responsible for the Adapter process
+  * @param incidentActor the actor responsible for the Incident process
   * @param ec           implicit CPU bound execution context.
   */
-class UserActor @Inject()(@Assisted id: String, @Named("adapterActor") adapterActor: ActorRef)
+class UserActor @Inject()(@Assisted id: String, @Named("incidentActor") incidentActor: ActorRef)
                          (implicit mat: Materializer, ec: ExecutionContext)
   extends Actor {
 
@@ -43,10 +44,10 @@ class UserActor @Inject()(@Assisted id: String, @Named("adapterActor") adapterAc
     * This is used by the UserParentActor to initiate the Websocket for a client.
     */
   override def receive: Receive = {
-    case CreateAdapter(cId) =>
+    case CreateIncident(cId) =>
       clientId = cId
       log.info(s"Create Websocket for Client: $clientId")
-      adapterActor ! SubscribeAdapter(clientId, wsActor())
+      incidentActor ! SubscribeIncident(clientId, wsActor())
       sender() ! websocketFlow
     case other =>
       log.info(s"Unexpected message from ${sender()}: $other")
@@ -54,11 +55,11 @@ class UserActor @Inject()(@Assisted id: String, @Named("adapterActor") adapterAc
 
   /**
     * If this actor is killed directly, stop anything that we started running explicitly.
-    * In our case unsubscribe the client in the AdapterActor
+    * In our case unsubscribe the client in the IncidentActor
     */
   override def postStop(): Unit = {
     log.info(marker, s"Stopping $clientId: actor $self")
-    adapterActor ! UnSubscribeAdapter(clientId)
+    incidentActor ! UnSubscribeIncident(clientId)
   }
 
   /**
@@ -68,7 +69,7 @@ class UserActor @Inject()(@Assisted id: String, @Named("adapterActor") adapterAc
     */
   private lazy val websocketFlow: Flow[JsValue, JsValue, NotUsed] = {
     // Put the source and sink together to make a flow of hub source as output (aggregating all
-    // AdapterMsgs as JSON to the browser) and the actor as the sink (receiving any JSON messages
+    // IncidentMsgs as JSON to the browser) and the actor as the sink (receiving any JSON messages
     // from the browse), using a coupled sink and source.
     Flow.fromSinkAndSourceCoupled(jsonSink, hubSource)
       .watchTermination() { (_, termination) =>
@@ -83,31 +84,29 @@ class UserActor @Inject()(@Assisted id: String, @Named("adapterActor") adapterAc
     .run()
 
   private val jsonSink: Sink[JsValue, Future[Done]] = Sink.foreach { json =>
-    // When the initiator runs the Adapter
-    json.validate[AdapterMsg] match {
-      case JsSuccess(runAdapter: RunAdapter, _) =>
-        adapterActor ! runAdapter
+    // There is no message expected from the client.
+    json.validate[IncidentMsg] match {
       case JsSuccess(other, _) =>
         log.warning(marker, s"Unexpected message from ${sender()}: $other")
       case JsError(errors) =>
-        log.error(marker, "Other than RunAdapter: " + errors.toString())
+        log.error(marker, "Other than IncidentMsg: " + errors.toString())
     }
   }
 
   /**
-    * Creates an ActorRef that handles the outgoing AdapterMsg one by one and send them to the hub.
+    * Creates an ActorRef that handles the outgoing IncidentMsg one by one and send them to the hub.
     */
   private def wsActor(): ActorRef = {
     // We convert everything to JsValue so we get a single stream for the websocket.
-    // As all messages are AdapterMessages we only need one Source.
-    val adapterActorSource = Source.actorRef(Int.MaxValue, OverflowStrategy.fail)
-    // Set up a complete runnable graph from the adapter source to the hub's sink
-    Flow[AdapterMsg]
+    // As all messages are IncidentMessages we only need one Source.
+    val incidentActorSource = Source.actorRef(Int.MaxValue, OverflowStrategy.fail)
+    // Set up a complete runnable graph from the incident source to the hub's sink
+    Flow[IncidentMsg]
       // send every minute a KeepAliveMsg - as with akka-http there is an idle-timeout
       .keepAlive(1.minute, () => KeepAliveMsg)
-      .map(Json.toJson[AdapterMsg])
+      .map(Json.toJson[IncidentMsg])
       .to(hubSink)
-      .runWith(adapterActorSource)
+      .runWith(incidentActorSource)
   }
 }
 
@@ -118,7 +117,7 @@ object UserActor {
     def apply(id: String): Actor
   }
 
-  case class CreateAdapter(clientId: String)
+  case class CreateIncident(clientId: String)
 }
 
 

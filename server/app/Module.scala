@@ -1,3 +1,4 @@
+import bots.IncidentConversationSubscription
 import com.google.inject.AbstractModule
 import play.api.libs.concurrent.AkkaGuiceSupport
 import pme.bots.boundary.BotRunner
@@ -9,12 +10,14 @@ class Module extends AbstractModule with AkkaGuiceSupport {
   import actors._
 
   override def configure(): Unit = {
-    bindActor[AdapterActor]("adapterActor")
+    bindActor[IncidentActor]("incidentActor")
     bindActor[UserParentActor]("userParentActor")
     bindActorFactory[UserActor, UserActor.Factory]
 
     bindActor[CommandDispatcher]("commandDispatcher")
     bind(classOf[BotRunner]).asEagerSingleton()
+    bind(classOf[IncidentConversationSubscription]).asEagerSingleton()
+
     bind(classOf[HelloServiceSubscription]).asEagerSingleton()
     bind(classOf[CounterServiceSubscription]).asEagerSingleton()
     bind(classOf[LogStateSubscription]).asEagerSingleton()
