@@ -1,10 +1,19 @@
-# Websockets with Play Framework, Scala.js, Binding.scala
+# Telegram Bot with Play Framework, Akka FSM, Scala.js, Binding.scala
 
 This project is based on:
-* [Algomancer's Starter Kit](https://github.com/Algomancer/Full-Stack-Scala-Starter)
-* [Lightbend's Websocket example](https://github.com/playframework/play-scala-websocket-example)
+* [Websockets with Play Framework, Scala.js, Binding.scala](https://github.com/pme123/play-wsocket-scalajs)
 
-See the general setup on the starter kit page.
+In this example I want to combine everything from the project above and extend it with:
+
+* Using my [Small framework to handle multiple conversations with a telegram bot.](https://github.com/pme123/play-akka-telegrambot4s)
+
+Let's start with the simple parts:
+# Shared model
+The great thing about a **full-stack Scala app** is that we only have to define our domain model once for the server and the client.
+
+Next to the model all that is needed is the JSON-un-/-marshalling. Thanks to the `julienrf.json.derived` library this involves only a few lines of code.
+
+Here is the whole class: 
 
 This is an example application showing how you can integrate a Play project with a Scala.js, Binding.scala project - using Web Sockets.
 
