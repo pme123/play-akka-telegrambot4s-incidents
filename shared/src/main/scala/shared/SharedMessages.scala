@@ -22,7 +22,7 @@ object IncidentMsg {
   implicit val jsonFormat: OFormat[IncidentMsg] = derived.oformat[IncidentMsg]()
 }
 
-case class Incident(incidentType: IncidentType, descr: String, assets: List[Asset]) {
+case class Incident(incidentType: IncidentType, descr: String, assets: List[Asset] = Nil) {
   require(descr.length > 4)
 }
 

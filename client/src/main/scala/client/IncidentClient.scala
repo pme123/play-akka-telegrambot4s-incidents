@@ -65,7 +65,7 @@ object IncidentClient extends js.JSApp {
   }
 
   private def addIncident(incident: Incident) {
-    incidents.value += incident
+    incidents.value.insert(0, incident)
 
     val objDiv = document.getElementById("incident-panel")
     objDiv.scrollTop = objDiv.scrollHeight - 20
@@ -73,7 +73,7 @@ object IncidentClient extends js.JSApp {
 
   @dom
   private def incidentDiv(incident: Incident) =
-    <div>
+    <div class="incident-row">
       <div class={s"incident-type ${incident.incidentType.name}"}>
         {incident.incidentType.name}
       </div>
@@ -117,12 +117,31 @@ object IncidentClient extends js.JSApp {
   private def showDetail(incident: Incident) = {
     <div class="detail-background">
       <div class="main-panel detail-panel">
-        <button onclick={event: Event => editIncident.value = None}>
-          close
-        </button>{incident.descr}
+        <div class="incident-row">
+          <div class={s"incident-type ${incident.incidentType.name}"}>
+            {incident.incidentType.name}
+          </div>
+          <button class="incident-show-detail" onclick={_: Event => editIncident.value = None}>
+            Close
+          </button>
+          <div class="incident-descr">
+            {incident.descr}
+          </div>
+
+        </div>
+        <div class="detail-images">
+          {Constants(incident.assets: _*).map(a => renderImage(a).bind)}
+        </div>
       </div>
     </div>
 
+  }
+
+  @dom
+  private def renderImage(asset: Asset) = {
+    <div class="detail-image">
+      <img src={asset.path}></img>
+    </div>
   }
 
   def main(): Unit = {

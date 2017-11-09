@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingReceive
 import akka.stream.Materializer
 import shared.IncidentMsg.{IncidentHistory, NewIncident}
-import shared.{Incident, IncidentMsg}
+import shared.{Asset, Incident, IncidentMsg, IncidentType}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext

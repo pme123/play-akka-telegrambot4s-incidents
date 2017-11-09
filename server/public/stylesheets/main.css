@@ -65,24 +65,35 @@ button[disabled]{
     padding: 10px;
 }
 
+.incident-row {
+    display: inline-block;
+    width: 100%;
+    margin-bottom: 5px;
+    border-bottom: solid #d1cee6 1px;
+    padding-bottom: 2px;
+}
+
 .incident-type {
-    width: 70px;
+    width: 100px;
     float: left;
 }
 
 .incident-descr {
-    width: calc(100% - 140px);
+    width: calc(100% - 200px);
     float: right;
 }
 
 .incident-show-detail {
     float: right;
-    width: 70px;
+    width: 100px;
+    margin: 0;
 }
 
 .detail-panel {
     z-index: 3;
     background: white;
+    padding: 10px;
+    border: solid 1px #babac5;
 }
 
 .detail-background {
@@ -94,6 +105,16 @@ button[disabled]{
     height: 100%;
     width: 100%;
     background: rgba(0,0,0,0.5);
+}
+
+.detail-images {
+    text-align: center;
+    overflow: auto;
+    height: calc(100% - 40px);
+}
+
+.detail-image img {
+    max-width: calc(100% - 20px);
 }
 
 .Heating {
