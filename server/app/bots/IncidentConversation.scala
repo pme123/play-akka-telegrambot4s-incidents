@@ -38,6 +38,7 @@ class IncidentConversation(incidentActor: ActorRef)
     case Event(Command(msg, _), _) =>
       // the message contains only the command '/incidents' - so msg is only needed for the response.
       bot.sendMessage(msg, "Please select incident type!"
+        // create the buttons for all IncidentTypes
         , Some(incidentSelector))
       // tell where to go next - we don't have any state
       goto(SelectIncidentType)
@@ -48,7 +49,7 @@ class IncidentConversation(incidentActor: ActorRef)
   // first step after selecting IncidentType.
   when(SelectIncidentType) {
     case Event(Command(msg, callbackData: Option[String]), _) =>
-      // now we check the the callback data
+      // now we check the callback data
       callbackData match {
         case Some(data) =>
           // ask the user for a description, as it is a text input no markup is needed.
@@ -67,6 +68,7 @@ class IncidentConversation(incidentActor: ActorRef)
   when(AddDescription) {
     // now we always work with the state of the previous step
     case Event(Command(msg, _), IncidentTypeData(incidentType)) =>
+      // all from the text input is in msg.text
       msg.text match {
         // check if the description has at least 5 characters
         case Some(descr) if descr.length >= 5 =>

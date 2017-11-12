@@ -40,7 +40,7 @@ It is more or less HTML-snippets that contain dynamic content provided by Bindin
 If you have troubles understanding it, please check out [Binding.scala-Google-Maps](https://github.com/pme123/Binding.scala-Google-Maps), where I explained all the details.
 
 # Server
-Now here is the interesting part which can be split into the following sub-chapters:
+The server part can be split into the following sub-chapters:
 
 ## User management
 When you go to [http://localhost:9000](http://localhost:9000) a web-socket is opened to show you incoming incidents.
@@ -57,7 +57,7 @@ See the documentation there.
 
 ## Incident Conversation
 Let's have a look now on the interesting part.
-Allways start with a description of your conversation:
+Always start with a description of your conversation;)
 ```
 /**
   * report an incident with an IncidentType, a description and optional images.
@@ -83,19 +83,22 @@ Let's go through all states.
     case Event(Command(msg, _), _) =>
       // the message contains only the command '/incidents' - so msg is only needed for the response.
       bot.sendMessage(msg, "Please select incident type!"
+        // create the buttons for all IncidentTypes
         , Some(incidentSelector))
       // tell where to go next - we don't have any state
       goto(SelectIncidentType)
-      // always handle all possible requests
+    // always handle all possible requests
     case other => notExpectedData(other)
   }
 ```
+  
 ### SelectIncidentType
+
 ```scala
   // first step after selecting IncidentType.
   when(SelectIncidentType) {
     case Event(Command(msg, callbackData: Option[String]), _) =>
-      // now we check the the callback data
+      // now we check the callback data
       callbackData match {
         case Some(data) =>
           // ask the user for a description, as it is a text input no markup is needed. 
@@ -117,6 +120,7 @@ Let's go through all states.
   when(AddDescription) {
     // now we always work with the state of the previous step
     case Event(Command(msg, _), IncidentTypeData(incidentType)) =>
+      // all from the text input is in msg.text
       msg.text match {
         // check if the description has at least 5 characters
         case Some(descr) if descr.length >= 5 =>
