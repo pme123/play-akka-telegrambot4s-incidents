@@ -13,7 +13,7 @@ lazy val server = (project in file("server")).settings(
     guice,
     filters,
     ws,
-    "com.github.pme123" % "play-akka-telegrambot4s" % "0.0.4",
+    "com.github.pme123" % "play-akka-telegrambot4s" % "0.0.7",
     "com.typesafe.akka" %% "akka-testkit" % "2.5.6" % Test,
     "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.6" % Test,
     "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test,

@@ -60,6 +60,7 @@ object IncidentClient extends js.JSApp {
     incidents.value.clear()
     incidents.value ++= newIncidents
 
+    // make sure the top of the list is visible
     val objDiv = document.getElementById("incident-panel")
     objDiv.scrollTop = objDiv.scrollHeight - newIncidents.length * 20
   }

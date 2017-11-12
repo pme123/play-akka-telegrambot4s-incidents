@@ -7,62 +7,78 @@ import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMark
 import pme.bots.control.ChatConversation
 import pme.bots.entity.SubscrType.SubscrConversation
 import pme.bots.entity.{Command, FSMData, FSMState, Subscription}
-import shared.IncidentMsg.NewIncident
 import shared.{Asset, Incident, IncidentType}
+import pme.bots.callback
+
+import scala.concurrent.ExecutionContext
 
 // @formatter:off
 /**
-  * process an incident with a category, a text and image.
+  * report an incident with an IncidentType, a description and optional images.
   *
   *     [Idle]  <-------------
   *       v                  |
-  *   [SelectIncidentType] <---  |
-  *       v               |  |
-  *     collectInfo  ------  |
+  *   [SelectIncidentType]   |
   *       v                  |
-  *      --------------------
+  *    [AddDescription]      |
+  *       v                  |
+  *   [AddAdditionalInfo] <--|
+  *       v                  |
+  *       --------------------
   */
 // @formatter:on
 class IncidentConversation(incidentActor: ActorRef)
+                          (implicit ec: ExecutionContext)
   extends ChatConversation {
 
-  private val TAG = callback
   private val finishReportTag = "Finish Report"
 
+  // if no Conversation is active - the Conversation is in the Idle state
   when(Idle) {
     case Event(Command(msg, _), _) =>
-      sendMessage(msg, "Please select incident type!"
-        , replyMarkup = Some(incidentSelector))
-      // tell where to go next
+      // the message contains only the command '/incidents' - so msg is only needed for the response.
+      bot.sendMessage(msg, "Please select incident type!"
+        , Some(incidentSelector))
+      // tell where to go next - we don't have any state
       goto(SelectIncidentType)
+    // always handle all possible requests
     case other => notExpectedData(other)
   }
 
+  // first step after selecting IncidentType.
   when(SelectIncidentType) {
     case Event(Command(msg, callbackData: Option[String]), _) =>
+      // now we check the the callback data
       callbackData match {
         case Some(data) =>
-          sendMessage(msg, "Can you add a description!")
+          // ask the user for a description, as it is a text input no markup is needed.
+          bot.sendMessage(msg, "Add a description:")
+          // when we go to the next step we add the IncidentType to the FSM.
           goto(AddDescription) using IncidentTypeData(IncidentType.from(data))
         case None =>
-          sendMessage(msg, "First you have to select the incident type!"
+          // when the user does not press a button - remind the user what we need
+          bot.sendMessage(msg, "First you have to select the incident type!"
             , Some(incidentSelector))
+          // and stay where we are
           stay()
       }
-    // this is a simple conversation that stays always in the same state.
   }
 
   when(AddDescription) {
+    // now we always work with the state of the previous step
     case Event(Command(msg, _), IncidentTypeData(incidentType)) =>
       msg.text match {
-        case Some(text) if text.length >= 5 =>
-          info(s"Got description: $text")
-          sendMessage(msg, "You can now add a Photo or finish the report!"
-            , createDefaultButtons(finishReportTag)
+        // check if the description has at least 5 characters
+        case Some(descr) if descr.length >= 5 =>
+          // ask for photos and provide a button to finish the report
+          bot.sendMessage(msg, "You can now add a Photo or finish the report!"
+            , bot.createDefaultButtons(finishReportTag)
           )
-          goto(AddAdditionalInfo) using IncidentData(incidentType, text)
+          // now the state contains the IncidentType and the description
+          goto(AddAdditionalInfo) using IncidentData(incidentType, descr)
         case _ =>
-          sendMessage(msg, "The description needs to have at least 5 characters!")
+          // in any other case try to bring the user back on track
+          bot.sendMessage(msg, "The description needs to have at least 5 characters!")
           stay()
       }
   }
@@ -70,23 +86,32 @@ class IncidentConversation(incidentActor: ActorRef)
   when(AddAdditionalInfo) {
     case Event(Command(msg, callbackData: Option[String]), incidentData: IncidentData) =>
       callbackData match {
+        // first check if the user hit the 'finish' button
         case Some(data) if data == finishReportTag =>
-          info(s"finished report")
+          // give a hint that the process is finished
+          bot.sendMessage(msg, "Thanks for the Report.\n" +
+            "\nIf you have another incident, click here: /incident")
+          // send the Incident to the IncidentActor that informs the web-clients
           incidentActor ! incidentData.toIncident
+          // go to the start step
           goto(Idle)
         case _ =>
-          getFilePath(msg).map {
+          // the process is asynchronous so a special step is needed
+          bot.getFilePath(msg).map {
             case Some((fileId, path)) =>
-              sendMessage(msg, "Ok, just add another Photo or finish the Report.", createDefaultButtons(finishReportTag))
-              info(s"uploaded mess $fileId :: $path")
+              // if the user added a photo - she can add more photos
+              bot.sendMessage(msg, "Ok, just add another Photo or finish the Report.", bot.createDefaultButtons(finishReportTag))
+              // async: the result is send to itself (ChatConversation) - the uploaded photo is added to the state.
               self ! ExecutionResult(AddAdditionalInfo, incidentData.copy(assets = Asset(fileId, path) :: incidentData.assets))
             case _ =>
-              sendMessage(msg, "You can only add a Photo or finish the Report.", createDefaultButtons(finishReportTag))
+              // in any other case try to bring the user back on track
+              bot.sendMessage(msg, "You can only add a Photo or finish the Report.", bot.createDefaultButtons(finishReportTag))
+              // async: the result is send to itself (ChatConversation) - no state change.
               self ! ExecutionResult(AddAdditionalInfo, incidentData)
           }
+          // async: go to the special step (ChatConversation) - which waits until it gets the ExecutionResult
           goto(WaitingForExecution)
       }
-    // this is a simple conversation that stays always in the same state.
   }
 
   private lazy val incidentSelector: InlineKeyboardMarkup = {
@@ -103,7 +128,7 @@ class IncidentConversation(incidentActor: ActorRef)
     ))
   }
 
-  private def tag: String => String = prefixTag(TAG)
+  private def tag(name: String): String = callback + name
 
   case object SelectIncidentType extends FSMState
 
@@ -125,14 +150,15 @@ class IncidentConversation(incidentActor: ActorRef)
 object IncidentConversation {
   val command = "/incident"
 
-  def props(incidentActor: ActorRef): Props = Props(new IncidentConversation(incidentActor))
+  def props(incidentActor: ActorRef)(implicit ec: ExecutionContext): Props = Props(new IncidentConversation(incidentActor))
 }
 
 @Singleton
 class IncidentConversationSubscription @Inject()(@Named("commandDispatcher")
                                                  commandDispatcher: ActorRef
                                                  , @Named("incidentActor") incidentActor: ActorRef
-                                                 , system: ActorSystem) {
+                                                 , system: ActorSystem)
+                                                (implicit ec: ExecutionContext) {
 
   import IncidentConversation._
 

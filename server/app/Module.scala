@@ -10,16 +10,26 @@ class Module extends AbstractModule with AkkaGuiceSupport {
   import actors._
 
   override def configure(): Unit = {
+    // For the web-sockets:
+    // Actor between the Bot logic and the Websockets
     bindActor[IncidentActor]("incidentActor")
+    // Actor that handles the web-sockets (all web-clients)
     bindActor[UserParentActor]("userParentActor")
+    // Actor of one web-socket
     bindActorFactory[UserActor, UserActor.Factory]
 
+    // Generic for the play-akka-telegrambot4s library
+    // the generic CommandDispatcher
     bindActor[CommandDispatcher]("commandDispatcher")
+    // starts the Bot itself (Boundary)
     bind(classOf[BotRunner]).asEagerSingleton()
-    bind(classOf[IncidentConversationSubscription]).asEagerSingleton()
 
+    // your Services:
     bind(classOf[HelloServiceSubscription]).asEagerSingleton()
+    // your Conversations:
     bind(classOf[CounterServiceSubscription]).asEagerSingleton()
+    bind(classOf[IncidentConversationSubscription]).asEagerSingleton()
+    // your RunAspects
     bind(classOf[LogStateSubscription]).asEagerSingleton()
   }
 }
