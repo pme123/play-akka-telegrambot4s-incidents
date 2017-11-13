@@ -31,7 +31,7 @@ Here is the whole class: [SharedMessages](https://github.com/pme123/play-akka-te
 # Client
 Once again it's build with [Binding.scala](https://github.com/ThoughtWorksInc/Binding.scala)
 
-Thanks to that, the code fits in 150 lines: [IncidentClient](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/master/client/src/main/scala/client/IncidentClient.scala)
+Thanks to that, the code fits in 150 lines: [IncidentClient](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/client/src/main/scala/client/IncidentClient.scala)
 
 It is more or less HTML-snippets that contain dynamic content provided by Binding.scala:
 * `Vars[Incident]` hosts all reported incidents.
@@ -49,7 +49,7 @@ The web-sockets are managed with Akka Actors. The implementation was taken from
 the **[Lightbend's Websocket example](https://github.com/playframework/play-scala-websocket-example)** 
 and adjusted to fit my needs.
 
-See [HomeController](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/master/server/app/controllers/HomeController.scala)
+See [HomeController](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/server/app/controllers/HomeController.scala)
 
 ## Chat management
 This is now handled by my [small framework](https://github.com/pme123/play-akka-telegrambot4s). 
