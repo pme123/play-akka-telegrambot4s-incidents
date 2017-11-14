@@ -73,13 +73,13 @@ button[disabled]{
     padding-bottom: 2px;
 }
 
-.incident-type {
-    width: 100px;
+.incident-tag {
+    width: 70px;
     float: left;
 }
 
 .incident-descr {
-    width: calc(100% - 200px);
+    width: calc(100% - 380px);
     float: right;
 }
 
@@ -133,8 +133,16 @@ button[disabled]{
     color: darkred;
 }
 
-.Other {
-    color: darkred;
+.OPEN, .URGENT {
+    color: red;
+}
+
+.IN_PROGRESS, .MEDIUM {
+    color: orange;
+}
+
+.DONE, .INFO {
+    color: green;
 }
 
 

@@ -4,13 +4,17 @@ import javax.inject.{Inject, Named, Singleton}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMarkup}
+import pme.bots.callback
 import pme.bots.control.ChatConversation
 import pme.bots.entity.SubscrType.SubscrConversation
 import pme.bots.entity.{Command, FSMData, FSMState, Subscription}
-import shared.{Asset, Incident, IncidentType}
-import pme.bots.callback
+import shared.IncidentType._
+import shared.IncidentLevel.MEDIUM
+import shared.IncidentStatus.OPEN
+import shared.{Asset, Incident}
 
 import scala.concurrent.ExecutionContext
+import scala.util.Random
 
 // @formatter:off
 /**
@@ -55,7 +59,7 @@ class IncidentConversation(incidentActor: ActorRef)
           // ask the user for a description, as it is a text input no markup is needed.
           bot.sendMessage(msg, "Add a description:")
           // when we go to the next step we add the IncidentType to the FSM.
-          goto(AddDescription) using IncidentTypeData(IncidentType.from(data))
+          goto(AddDescription) using IncidentTypeData(typeFrom(data))
         case None =>
           // when the user does not press a button - remind the user what we need
           bot.sendMessage(msg, "First you have to select the incident type!"
@@ -117,7 +121,6 @@ class IncidentConversation(incidentActor: ActorRef)
   }
 
   private lazy val incidentSelector: InlineKeyboardMarkup = {
-    import shared.IncidentType._
     InlineKeyboardMarkup(Seq(
       Seq(
         InlineKeyboardButton.callbackData(Heating.name, tag(Heating.name))
@@ -142,7 +145,7 @@ class IncidentConversation(incidentActor: ActorRef)
 
   case class IncidentData(incidentType: IncidentType, descr: String, assets: List[Asset] = Nil) extends FSMData {
 
-    def toIncident: Incident = Incident(incidentType, descr, assets)
+    def toIncident: Incident = Incident(Random.alphanumeric.take(6).mkString, MEDIUM,incidentType, descr, OPEN, assets)
 
   }
 
