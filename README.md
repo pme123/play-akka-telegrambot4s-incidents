@@ -19,6 +19,8 @@ They will report an incident to a Telegram Bot with their mobile phones:
 
 A web-page shows all incidents - the newest on top. To see the attached images you open a detail view.
 
+![play-akka-telegram4s-incidents](https://user-images.githubusercontent.com/3437927/32769750-6d5ab8aa-c91d-11e7-867c-05a8d1227317.gif)
+
 Let's start with the simple parts:
 
 # Shared model
