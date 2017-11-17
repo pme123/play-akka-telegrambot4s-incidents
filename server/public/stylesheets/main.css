@@ -23,7 +23,7 @@ body, .body-panel {
 }
 
 .main-panel {
-    width: 700px;
+    width: 800px;
     height: calc(100% - 140px);
     position: absolute;
     top: 60px;
@@ -74,12 +74,12 @@ button[disabled]{
 }
 
 .incident-tag {
-    width: 70px;
+    width: 100px;
     float: left;
 }
 
 .incident-descr {
-    width: calc(100% - 380px);
+    width: calc(100% - 500px);
     float: right;
 }
 

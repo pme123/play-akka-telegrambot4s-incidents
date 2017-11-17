@@ -66,7 +66,10 @@ object IncidentClient extends js.JSApp {
   }
 
   private def addIncident(incident: Incident) {
-    incidents.value.insert(0, incident)
+    val existingIncidents = incidents.value.filterNot(_.ident == incident.ident).toList
+    incidents.value.clear()
+    incidents.value ++= incident :: existingIncidents
+    println(s"incidents: $existingIncidents")
 
     val objDiv = document.getElementById("incident-panel")
     objDiv.scrollTop = objDiv.scrollHeight - 20
@@ -141,7 +144,7 @@ object IncidentClient extends js.JSApp {
   @dom
   private def renderTag(tag: IncidentTag, cssClass: String) =
     <div class={s"incident-tag $cssClass ${tag.name}"}>
-      {tag.name}
+      {tag.label}
     </div>
 
   @dom

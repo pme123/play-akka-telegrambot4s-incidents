@@ -12,6 +12,7 @@ object IncidentTag {
 
   implicit val jsonFormat: OFormat[IncidentTag] = derived.oformat[IncidentTag]()
 
+  def apply(name: String, label: String): IncidentTag = IncidentTag(name, Some(label))
 }
 
 object IncidentType {
@@ -43,6 +44,8 @@ object IncidentStatus {
   val IN_PROGRESS: IncidentStatus = IncidentTag("IN_PROGRESS", Some("IN PROGRESS"))
   val DONE: IncidentStatus = IncidentTag("DONE")
 
+  val all = Seq(OPEN, IN_PROGRESS, DONE)
+
   def statusFrom(name: String): IncidentStatus = name match {
     case OPEN.name => OPEN
     case IN_PROGRESS.name => IN_PROGRESS
@@ -57,6 +60,8 @@ object IncidentLevel {
   val URGENT: IncidentLevel = IncidentTag("URGENT")
   val MEDIUM: IncidentLevel = IncidentTag("MEDIUM")
   val INFO: IncidentLevel = IncidentTag("INFO")
+
+  def all = Seq(INFO, MEDIUM, URGENT)
 
   def levelFrom(name: String): IncidentLevel = name match {
     case URGENT.name => URGENT

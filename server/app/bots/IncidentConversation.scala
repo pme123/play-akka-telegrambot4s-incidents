@@ -4,17 +4,14 @@ import javax.inject.{Inject, Named, Singleton}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMarkup}
-import pme.bots.callback
 import pme.bots.control.ChatConversation
 import pme.bots.entity.SubscrType.SubscrConversation
-import pme.bots.entity.{Command, FSMData, FSMState, Subscription}
-import shared.IncidentType._
+import pme.bots.entity.{Command, FSMState, Subscription}
+import shared.Asset
 import shared.IncidentLevel._
-import shared.IncidentStatus._
-import shared.{Asset, Incident, IncidentTag}
+import shared.IncidentType._
 
 import scala.concurrent.ExecutionContext
-import scala.util.Random
 
 // @formatter:off
 /**
@@ -33,7 +30,8 @@ import scala.util.Random
 // @formatter:on
 class IncidentConversation(incidentActor: ActorRef)
                           (implicit ec: ExecutionContext)
-  extends ChatConversation {
+  extends ChatConversation
+    with IncidentsBot {
 
   private val finishReportTag = "Finish Report"
 
@@ -114,7 +112,8 @@ class IncidentConversation(incidentActor: ActorRef)
         // first check if the user hit the 'finish' button
         case Some(data) if data == finishReportTag =>
           // give a hint that the process is finished
-          bot.sendMessage(msg, "Thanks for the Report.\n" +
+          bot.sendMessage(msg, "Thanks for the Report." +
+            s"\nYour incident has the ident ${incidentData.ident}" +
             "\nIf you have another incident, click here: /incident")
           // send the Incident to the IncidentActor that informs the web-clients
           incidentActor ! incidentData.toIncident
@@ -152,19 +151,7 @@ class IncidentConversation(incidentActor: ActorRef)
     ))
   }
 
-  private def incidentTagSelector(tags: Seq[IncidentTag]) = {
-
-    InlineKeyboardMarkup(
-      tags.grouped(2).map { row =>
-        row.map(t => InlineKeyboardButton.callbackData(t.label, tag(t.name)))
-      }.toSeq
-    )
-  }
-
   private val incidentLevelMarkup = Some(incidentTagSelector(Seq(INFO, MEDIUM, URGENT)))
-
-
-  private def tag(name: String): String = callback + name
 
   case object SelectIncidentType extends FSMState
 
@@ -173,16 +160,6 @@ class IncidentConversation(incidentActor: ActorRef)
   case object AddDescription extends FSMState
 
   case object AddAdditionalInfo extends FSMState
-
-  case class IncidentData(level: IncidentLevel = MEDIUM
-                          , incidentType: IncidentType = Garage
-                          , descr: String = "NOT SET"
-                          , assets: List[Asset] = Nil) extends FSMData {
-
-    def toIncident: Incident = Incident(Random.alphanumeric.take(4).mkString, level, incidentType, descr, OPEN, assets)
-
-  }
-
 
 }
 
