@@ -6,9 +6,10 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMarkup}
 import pme.bots.control.ChatConversation
 import pme.bots.entity.SubscrType.SubscrConversation
-import pme.bots.entity.{Command, FSMData, FSMState, Subscription}
-import shared.{Asset, Incident, IncidentType}
-import pme.bots.callback
+import pme.bots.entity.{Command, FSMState, Subscription}
+import shared.Asset
+import shared.IncidentLevel._
+import shared.IncidentType._
 
 import scala.concurrent.ExecutionContext
 
@@ -29,7 +30,8 @@ import scala.concurrent.ExecutionContext
 // @formatter:on
 class IncidentConversation(incidentActor: ActorRef)
                           (implicit ec: ExecutionContext)
-  extends ChatConversation {
+  extends ChatConversation
+    with IncidentsBot {
 
   private val finishReportTag = "Finish Report"
 
@@ -39,7 +41,7 @@ class IncidentConversation(incidentActor: ActorRef)
       // the message contains only the command '/incidents' - so msg is only needed for the response.
       bot.sendMessage(msg, "Please select incident type!"
         // create the buttons for all IncidentTypes
-        , Some(incidentSelector))
+        , Some(incidentTypeSelector))
       // tell where to go next - we don't have any state
       goto(SelectIncidentType)
     // always handle all possible requests
@@ -53,13 +55,32 @@ class IncidentConversation(incidentActor: ActorRef)
       callbackData match {
         case Some(data) =>
           // ask the user for a description, as it is a text input no markup is needed.
-          bot.sendMessage(msg, "Add a description:")
+          bot.sendMessage(msg, "What is the urgency (level):"
+            , incidentLevelMarkup)
           // when we go to the next step we add the IncidentType to the FSM.
-          goto(AddDescription) using IncidentTypeData(IncidentType.from(data))
+          goto(SelectIncidentLevel) using IncidentData(incidentType = typeFrom(data))
         case None =>
           // when the user does not press a button - remind the user what we need
           bot.sendMessage(msg, "First you have to select the incident type!"
-            , Some(incidentSelector))
+            , Some(incidentTypeSelector))
+          // and stay where we are
+          stay()
+      }
+  }
+
+  when(SelectIncidentLevel) {
+    case Event(Command(msg, callbackData: Option[String]), incidentData: IncidentData) =>
+      // now we check the callback data
+      callbackData match {
+        case Some(data) =>
+          // ask the user for a description, as it is a text input no markup is needed.
+          bot.sendMessage(msg, "Add a description:")
+          // when we go to the next step we add the IncidentLevel to the FSM.
+          goto(AddDescription) using incidentData.copy(level = levelFrom(data))
+        case None =>
+          // when the user does not press a button - remind the user what we need
+          bot.sendMessage(msg, "First you have to select the incident level!"
+            , incidentLevelMarkup)
           // and stay where we are
           stay()
       }
@@ -67,7 +88,7 @@ class IncidentConversation(incidentActor: ActorRef)
 
   when(AddDescription) {
     // now we always work with the state of the previous step
-    case Event(Command(msg, _), IncidentTypeData(incidentType)) =>
+    case Event(Command(msg, _), incidentData: IncidentData) =>
       // all from the text input is in msg.text
       msg.text match {
         // check if the description has at least 5 characters
@@ -77,7 +98,7 @@ class IncidentConversation(incidentActor: ActorRef)
             , bot.createDefaultButtons(finishReportTag)
           )
           // now the state contains the IncidentType and the description
-          goto(AddAdditionalInfo) using IncidentData(incidentType, descr)
+          goto(AddAdditionalInfo) using incidentData.copy(descr = descr)
         case _ =>
           // in any other case try to bring the user back on track
           bot.sendMessage(msg, "The description needs to have at least 5 characters!")
@@ -91,7 +112,8 @@ class IncidentConversation(incidentActor: ActorRef)
         // first check if the user hit the 'finish' button
         case Some(data) if data == finishReportTag =>
           // give a hint that the process is finished
-          bot.sendMessage(msg, "Thanks for the Report.\n" +
+          bot.sendMessage(msg, "Thanks for the Report." +
+            s"\nYour incident has the ident ${incidentData.ident}" +
             "\nIf you have another incident, click here: /incident")
           // send the Incident to the IncidentActor that informs the web-clients
           incidentActor ! incidentData.toIncident
@@ -116,36 +138,28 @@ class IncidentConversation(incidentActor: ActorRef)
       }
   }
 
-  private lazy val incidentSelector: InlineKeyboardMarkup = {
-    import shared.IncidentType._
+  private lazy val incidentTypeSelector = {
     InlineKeyboardMarkup(Seq(
       Seq(
-        InlineKeyboardButton.callbackData(Heating.name, tag(Heating.name))
-        , InlineKeyboardButton.callbackData(Water.name, tag(Water.name)))
+        InlineKeyboardButton.callbackData(Heating.label, tag(Heating.name))
+        , InlineKeyboardButton.callbackData(Water.label, tag(Water.name)))
       , Seq(
-        InlineKeyboardButton.callbackData(Garage.name, tag(Garage.name))
-        , InlineKeyboardButton.callbackData(Elevator.name, tag(Elevator.name)))
+        InlineKeyboardButton.callbackData(Garage.label, tag(Garage.name))
+        , InlineKeyboardButton.callbackData(Elevator.label, tag(Elevator.name)))
       , Seq(
-        InlineKeyboardButton.callbackData(Other.name, tag(Other.name)))
+        InlineKeyboardButton.callbackData(Other.label, tag(Other.name)))
     ))
   }
 
-  private def tag(name: String): String = callback + name
+  private val incidentLevelMarkup = Some(incidentTagSelector(Seq(INFO, MEDIUM, URGENT)))
 
   case object SelectIncidentType extends FSMState
+
+  case object SelectIncidentLevel extends FSMState
 
   case object AddDescription extends FSMState
 
   case object AddAdditionalInfo extends FSMState
-
-  case class IncidentTypeData(incidentType: IncidentType) extends FSMData
-
-  case class IncidentData(incidentType: IncidentType, descr: String, assets: List[Asset] = Nil) extends FSMData {
-
-    def toIncident: Incident = Incident(incidentType, descr, assets)
-
-  }
-
 
 }
 

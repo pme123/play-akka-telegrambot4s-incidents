@@ -22,9 +22,10 @@ object IncidentClient
   @dom
   private def incidentDiv(incident: Incident) =
     <div class="incident-row">
-      <div class={s"incident-type ${incident.incidentType.name}"}>
-        {incident.incidentType.name}
-      </div>
+      {renderTag(incident.level, "incident-level").bind}{//
+      renderTag(incident.status, "incident-status").bind}{//
+      renderTag(incident.incidentType, "incident-type").bind}{//
+      renderIdent(incident.ident).bind}
       <button class="incident-show-detail" onclick={_: Event => selectIncident(incident)}>
         Show Details
       </button>
@@ -68,13 +69,14 @@ object IncidentClient
   }
 
   @dom
-  private def showDetail(incident: Incident) = {
+  private def showDetail(incident: Incident) =
     <div class="detail-background">
       <div class="main-panel detail-panel">
         <div class="incident-row">
-          <div class={s"incident-type ${incident.incidentType.name}"}>
-            {incident.incidentType.name}
-          </div>
+          {renderTag(incident.level, "incident-level").bind}{//
+          renderTag(incident.status, "incident-status").bind}{//
+          renderTag(incident.incidentType, "incident-type").bind}{//
+          renderIdent(incident.ident).bind}
           <button class="incident-show-detail" onclick={_: Event => clearEditIncident()}>
             Close
           </button>
@@ -89,7 +91,19 @@ object IncidentClient
       </div>
     </div>
 
-  }
+  @dom
+  private def renderTag(tag: IncidentTag, cssClass: String) =
+    <div class={s"incident-tag $cssClass ${tag.name}"}>
+      {tag.label}
+    </div>
+
+  @dom
+  private def renderIdent(ident: String) =
+    <div class={s"incident-tag ${ident}"}>
+      <b>
+        {ident}
+      </b>
+    </div>
 
   @dom
   private def renderImage(asset: Asset) = {

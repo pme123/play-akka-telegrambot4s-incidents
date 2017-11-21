@@ -23,7 +23,7 @@ body, .body-panel {
 }
 
 .main-panel {
-    width: 700px;
+    width: 800px;
     height: calc(100% - 140px);
     position: absolute;
     top: 60px;
@@ -73,13 +73,13 @@ button[disabled]{
     padding-bottom: 2px;
 }
 
-.incident-type {
+.incident-tag {
     width: 100px;
     float: left;
 }
 
 .incident-descr {
-    width: calc(100% - 200px);
+    width: calc(100% - 500px);
     float: right;
 }
 
@@ -133,8 +133,16 @@ button[disabled]{
     color: darkred;
 }
 
-.Other {
-    color: darkred;
+.OPEN, .URGENT {
+    color: red;
+}
+
+.IN_PROGRESS, .MEDIUM {
+    color: orange;
+}
+
+.DONE, .INFO {
+    color: green;
 }
 
 
