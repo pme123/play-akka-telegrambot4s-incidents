@@ -44,8 +44,10 @@ lazy val client = (project in file("client")).settings(
   scalacOptions ++= Seq("-Xmax-classfile-name", "78"),
   scalaJSUseMainModuleInitializer in Test := false,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-  // jsDependencies += "org.webjars" % "flot" % "0.8.3" / "flot.js" minified "flot.min.js",
-  // jsDependencies += "org.webjars" % "bootstrap" % "3.3.6" / "bootstrap.js" minified "bootstrap.min.js",
+  jsDependencies ++= Seq(
+    "org.webjars" % "jquery" % jQueryV / "jquery.js" minified "jquery.min.js",
+    "org.webjars" % "Semantic-UI" % semanticV / "semantic.js" minified "semantic.min.js" dependsOn "jquery.js"
+  ),
   libraryDependencies ++= Seq(
     "org.scala-js" %%% "scalajs-dom" % "0.9.3",
     "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
@@ -58,7 +60,7 @@ lazy val client = (project in file("client")).settings(
     // jquery support for ScalaJS
     "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
   )
-).enablePlugins(ScalaJSPlugin, ScalaJSWeb)
+).enablePlugins(ScalaJSWeb)
   .dependsOn(sharedJs)
 
 lazy val shared = crossProject(JSPlatform, JVMPlatform)
@@ -66,6 +68,7 @@ lazy val shared = crossProject(JSPlatform, JVMPlatform)
   .settings(scalaVersion := scalaV
     , libraryDependencies ++= Seq(
       "org.julienrf" %%% "play-json-derived-codecs" % "4.0.0"
+      // logging lib that also works with ScalaJS
       , "biz.enef" %%% "slogging" % "0.6.0"
     ))
   .jsSettings(/* ... */) // defined in sbt-scalajs-crossproject

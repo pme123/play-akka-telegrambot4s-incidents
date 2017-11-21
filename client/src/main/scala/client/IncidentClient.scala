@@ -1,76 +1,23 @@
 package client
 
-import com.thoughtworks.binding.Binding.{Constants, Var, Vars}
+import com.thoughtworks.binding.Binding.Constants
 import com.thoughtworks.binding.{Binding, dom}
+import org.scalajs.dom.document
 import org.scalajs.dom.raw._
-import org.scalajs.dom.{document, window}
-import play.api.libs.json._
-import shared.IncidentMsg.{IncidentHistory, NewIncident}
+import org.scalajs.jquery.jQuery
 import shared._
 
 import scala.language.implicitConversions
 import scala.scalajs.js
-import scala.scalajs.js.timers.setTimeout
+import scala.scalajs.js.Dynamic.{global => g}
 
-object IncidentClient extends js.JSApp {
+object IncidentClient
+  extends js.JSApp
+    with UIStore {
 
-  implicit def makeIntellijHappy(x: scala.xml.Elem): Binding[HTMLElement] = ???
+  val uiState = UIState()
 
-
-  private val incidents = Vars[Incident]()
-  private val editIncident = Var[Option[Incident]](None)
-
-  private lazy val wsURL = s"ws://${window.location.host}/ws"
-
-  private var socket: WebSocket = _
-
-  private def connectWS() {
-    socket = new WebSocket(wsURL)
-    socket.onmessage = {
-      (e: MessageEvent) =>
-        val message = Json.parse(e.data.toString)
-        message.validate[IncidentMsg] match {
-          case JsSuccess(NewIncident(incident), _) =>
-            addIncident(incident)
-          case JsSuccess(incidentHistory: IncidentHistory, _) =>
-            addIncidents(incidentHistory.incidents)
-          case JsSuccess(other, _) =>
-            println(s"Other message: $other")
-          case JsError(errors) =>
-            errors foreach println
-        }
-    }
-    socket.onerror = { (e: ErrorEvent) =>
-      println(s"exception with websocket: ${e.message}!")
-      socket.close(0, e.message)
-    }
-    socket.onopen = { (e: Event) =>
-      println("websocket open!")
-      incidents.value.clear()
-    }
-    socket.onclose = { (e: CloseEvent) =>
-      println("closed socket" + e.reason)
-      setTimeout(1000) {
-        connectWS() // try to reconnect automatically
-      }
-    }
-  }
-
-  private def addIncidents(newIncidents: Seq[Incident]) {
-    incidents.value.clear()
-    incidents.value ++= newIncidents
-
-    // make sure the top of the list is visible
-    val objDiv = document.getElementById("incident-panel")
-    objDiv.scrollTop = objDiv.scrollHeight - newIncidents.length * 20
-  }
-
-  private def addIncident(incident: Incident) {
-    incidents.value.insert(0, incident)
-
-    val objDiv = document.getElementById("incident-panel")
-    objDiv.scrollTop = objDiv.scrollHeight - 20
-  }
+  private lazy val socket = ClientWebsocket(uiState)
 
   @dom
   private def incidentDiv(incident: Incident) =
@@ -78,7 +25,7 @@ object IncidentClient extends js.JSApp {
       <div class={s"incident-type ${incident.incidentType.name}"}>
         {incident.incidentType.name}
       </div>
-      <button class="incident-show-detail" onclick={event: Event => editIncident.value = Some(incident)}>
+      <button class="incident-show-detail" onclick={_: Event => selectIncident(incident)}>
         Show Details
       </button>
       <div class="incident-descr">
@@ -89,18 +36,24 @@ object IncidentClient extends js.JSApp {
 
   @dom
   private def render = {
-    <div class="main-panel">
-      <div class="button-panel">
-        <button onclick={event: Event => incidents.value.clear()}>
-          Clear Console
-        </button>
-      </div>{renderIncidents.bind}{renderDetail.bind}
+    <div class="body-panel">
+      <div class="header-panel">
+        <img class="header-img" src={"" + g.jsRoutes.controllers.Assets.versioned("images/favicon.png").url}></img>
+        Reactive Incident Log Demo
+      </div>
+      <div class="main-panel">
+        <div class="button-panel">
+          <button onclick={_: Event => clearIncidents()}>
+            Clear Console
+          </button>
+        </div>{renderIncidents.bind}{renderDetail.bind}
+      </div>
     </div>
   }
 
   @dom
   private def renderIncidents = {
-    val incs = incidents.bind
+    val incs = uiState.incidents.bind
     <div id="incident-panel">
       {Constants(incs: _*).map(incidentDiv(_).bind)}
     </div>
@@ -108,7 +61,7 @@ object IncidentClient extends js.JSApp {
 
   @dom
   private def renderDetail = {
-    val maybeInc = editIncident.bind
+    val maybeInc = uiState.editIncident.bind
     <div>
       {Constants(maybeInc.toSeq: _*).map(inc => showDetail(inc).bind)}
     </div>
@@ -122,7 +75,7 @@ object IncidentClient extends js.JSApp {
           <div class={s"incident-type ${incident.incidentType.name}"}>
             {incident.incidentType.name}
           </div>
-          <button class="incident-show-detail" onclick={_: Event => editIncident.value = None}>
+          <button class="incident-show-detail" onclick={_: Event => clearEditIncident()}>
             Close
           </button>
           <div class="incident-descr">
@@ -146,7 +99,12 @@ object IncidentClient extends js.JSApp {
   }
 
   def main(): Unit = {
-    dom.render(document.getElementById("incident-client"), render)
-    connectWS() // initial population
+    dom.render(document.body, render)
+    socket.connectWS()
+    import SemanticUI.jq2semantic
+    jQuery(".ui.dropdown").dropdown(js.Dynamic.literal(on = "hover"))
   }
+
+  implicit def makeIntellijHappy(x: scala.xml.Elem): Binding[HTMLElement] = ???
+
 }
