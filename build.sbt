@@ -1,4 +1,9 @@
-lazy val scalaV = "2.12.2"
+// (5) shadow sbt-scalajs' crossProject and CrossType until Scala.js 1.0.0 is released
+import sbtcrossproject.{crossProject, CrossType}
+
+lazy val scalaV = "2.12.3"
+lazy val jQueryV = "2.2.4"
+lazy val semanticV = "2.2.10"
 
 lazy val server = (project in file("server")).settings(
   scalaVersion := scalaV,
@@ -12,13 +17,24 @@ lazy val server = (project in file("server")).settings(
     "com.vmunier" %% "scalajs-scripts" % "1.1.1",
     guice,
     filters,
-    ws,
-    "com.github.pme123" % "play-akka-telegrambot4s" % "0.0.7",
+    ws
+    // webjars for Semantic-UI
+    , "org.webjars" %% "webjars-play" % "2.6.1"
+    , "org.webjars" % "Semantic-UI" % semanticV
+    , "org.webjars" % "jquery" % jQueryV
+    ,
+    "com.github.pme123" % "play-akka-telegrambot4s" % "0.0.10",
     "com.typesafe.akka" %% "akka-testkit" % "2.5.6" % Test,
     "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.6" % Test,
     "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test,
     "org.awaitility" % "awaitility" % "3.0.0" % Test
-  )
+  ),
+  // to have routing also in ScalaJS
+  // Create a map of versioned assets, replacing the empty versioned.js
+  DigestKeys.indexPath := Some("javascripts/versioned.js"),
+  // Assign the asset index to a global versioned var
+  DigestKeys.indexWriter ~= { writer => index => s"var versioned = ${writer(index)};" }
+
 ).enablePlugins(PlayScala)
   .dependsOn(sharedJvm)
 
@@ -37,17 +53,23 @@ lazy val client = (project in file("client")).settings(
     "com.thoughtworks.binding" %%% "dom" % "11.0.0-M4",
     "com.thoughtworks.binding" %%% "futurebinding" % "11.0.0-M4",
     "fr.hmil" %%% "roshttp" % "2.0.2",
-    "org.scala-js" %%% "scalajs-java-time" % "0.2.2"
+    // java.time supprot for ScalaJS
+    "org.scala-js" %%% "scalajs-java-time" % "0.2.2",
+    // jquery support for ScalaJS
+    "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
   )
-).enablePlugins(ScalaJSPlugin, ScalaJSWeb).
-  dependsOn(sharedJs)
+).enablePlugins(ScalaJSPlugin, ScalaJSWeb)
+  .dependsOn(sharedJs)
 
-lazy val shared = (crossProject.crossType(CrossType.Pure) in file("shared"))
+lazy val shared = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
   .settings(scalaVersion := scalaV
     , libraryDependencies ++= Seq(
       "org.julienrf" %%% "play-json-derived-codecs" % "4.0.0"
       , "biz.enef" %%% "slogging" % "0.6.0"
     ))
+  .jsSettings(/* ... */) // defined in sbt-scalajs-crossproject
+  .jvmSettings(/* ... */)
   .jsConfigure(_ enablePlugins ScalaJSWeb)
 
 lazy val sharedJvm = shared.jvm
