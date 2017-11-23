@@ -2,10 +2,7 @@ package shared
 
 import julienrf.json.derived
 import play.api.libs.json.OFormat
-
-import IncidentLevel.IncidentLevel
-import IncidentStatus.{IncidentStatus, OPEN}
-import IncidentType.IncidentType
+import shared.IncidentStatus.OPEN
 
 
 case class Incident(ident: String

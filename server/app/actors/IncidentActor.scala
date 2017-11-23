@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingReceive
 import akka.stream.Materializer
 import shared.IncidentMsg.{IncidentHistory, NewIncident}
-import shared.{Incident, IncidentMsg, IncidentLevel, IncidentType}
+import shared._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
@@ -22,7 +22,8 @@ class IncidentActor @Inject()(implicit mat: Materializer, ec: ExecutionContext)
 
   private val incidents: mutable.ListBuffer[Incident] = mutable.ListBuffer()
 
-  incidents += Incident("dEr4s", IncidentLevel.URGENT, IncidentType.Garage, "Problem with the light.")
+  incidents += Incident("dEr4s", IncidentLevel.URGENT, IncidentType.Garage, "Problem with the light.", IncidentStatus.IN_PROGRESS)
+  incidents += Incident("r5hTr", IncidentLevel.MEDIUM, IncidentType.Elevator, "Strange noise when running.")
 
   // a map with all clients (Websocket-Actor) that needs the status about the process
   private val clientActors: mutable.Map[String, ActorRef] = mutable.Map()

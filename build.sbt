@@ -4,6 +4,7 @@ import sbtcrossproject.{crossProject, CrossType}
 lazy val scalaV = "2.12.3"
 lazy val jQueryV = "2.2.4"
 lazy val semanticV = "2.2.10"
+lazy val playTelegramV = "0.0.10"
 
 lazy val server = (project in file("server")).settings(
   scalaVersion := scalaV,
@@ -22,8 +23,9 @@ lazy val server = (project in file("server")).settings(
     , "org.webjars" %% "webjars-play" % "2.6.1"
     , "org.webjars" % "Semantic-UI" % semanticV
     , "org.webjars" % "jquery" % jQueryV
+
+    , "com.github.pme123" % "play-akka-telegrambot4s" % playTelegramV
     ,
-    "com.github.pme123" % "play-akka-telegrambot4s" % "0.0.10",
     "com.typesafe.akka" %% "akka-testkit" % "2.5.6" % Test,
     "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.6" % Test,
     "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test,

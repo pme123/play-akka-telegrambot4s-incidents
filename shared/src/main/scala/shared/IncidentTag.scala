@@ -3,27 +3,44 @@ package shared
 import julienrf.json.derived
 import play.api.libs.json.OFormat
 
-case class IncidentTag(name: String, labelOpt: Option[String] = None) {
-  require(name != null && name.length >= 3, "A name is required to have at least 3 characters")
-  val label: String = labelOpt.getOrElse(name)
+trait IncidentTag {
+  def name: String
+
+  def label: String = name
+
+ // require(name != null && name.length >= 3, "A name is required to have at least 3 characters")
+
 }
 
 object IncidentTag {
 
-  implicit val jsonFormat: OFormat[IncidentTag] = derived.oformat[IncidentTag]()
+  //implicit lazy val jsonFormat: OFormat[IncidentTag] = derived.oformat[IncidentTag]()
+}
 
-  def apply(name: String, label: String): IncidentTag = IncidentTag(name, Some(label))
+sealed trait IncidentType extends IncidentTag {
 }
 
 object IncidentType {
 
-  type IncidentType = IncidentTag
+  case object Heating extends IncidentType {
+    val name = "Heating"
+  }
 
-  val Heating: IncidentType = IncidentTag("Heating")
-  val Water: IncidentType = IncidentTag("Water")
-  val Elevator: IncidentType = IncidentTag("Elevator")
-  val Garage: IncidentType = IncidentTag("Garage")
-  val Other: IncidentType = IncidentTag("Other")
+  case object Water extends IncidentType {
+    val name = "Water"
+  }
+
+  case object Elevator extends IncidentType {
+    val name = "Elevator"
+  }
+
+  case object Garage extends IncidentType {
+    val name = "Garage"
+  }
+
+  case object Other extends IncidentType {
+    val name = "Other"
+  }
 
   def typeFrom(name: String): IncidentType = name match {
     case Heating.name => Heating
@@ -34,15 +51,27 @@ object IncidentType {
     case other => throw new IllegalArgumentException(s"Unsupported IncidentType: $other")
   }
 
+  implicit val jsonFormat: OFormat[IncidentType] = derived.oformat[IncidentType]()
+
 }
 
+sealed trait IncidentStatus extends IncidentTag {
+}
 
 object IncidentStatus {
-  type IncidentStatus = IncidentTag
 
-  val OPEN: IncidentStatus = IncidentTag("OPEN")
-  val IN_PROGRESS: IncidentStatus = IncidentTag("IN_PROGRESS", Some("IN PROGRESS"))
-  val DONE: IncidentStatus = IncidentTag("DONE")
+  case object OPEN extends IncidentStatus {
+    val name = "OPEN"
+  }
+
+  case object IN_PROGRESS extends IncidentStatus {
+    val name = "IN_PROGRESS"
+    override val label = "IN PROGRESS"
+  }
+
+  case object DONE extends IncidentStatus {
+    val name = "DONE"
+  }
 
   val all = Seq(OPEN, IN_PROGRESS, DONE)
 
@@ -52,14 +81,34 @@ object IncidentStatus {
     case DONE.name => DONE
     case other => throw new IllegalArgumentException(s"Unsupported IncidentStatus: $other")
   }
+
+  implicit val jsonFormat: OFormat[IncidentStatus] = derived.oformat[IncidentStatus]()
+
+}
+
+sealed trait IncidentLevel extends IncidentTag {
+  def >=(level: IncidentLevel): Boolean
 }
 
 object IncidentLevel {
-  type IncidentLevel = IncidentTag
 
-  val URGENT: IncidentLevel = IncidentTag("URGENT")
-  val MEDIUM: IncidentLevel = IncidentTag("MEDIUM")
-  val INFO: IncidentLevel = IncidentTag("INFO")
+  case object URGENT extends IncidentLevel {
+    val name = "URGENT"
+
+    def >=(level: IncidentLevel): Boolean = true
+  }
+
+  case object MEDIUM extends IncidentLevel {
+    val name = "MEDIUM"
+
+    def >=(level: IncidentLevel): Boolean = level != URGENT
+  }
+
+  case object INFO extends IncidentLevel {
+    val name = "INFO"
+
+    def >=(level: IncidentLevel): Boolean = level == INFO
+  }
 
   def all = Seq(INFO, MEDIUM, URGENT)
 
@@ -69,4 +118,7 @@ object IncidentLevel {
     case INFO.name => INFO
     case other => throw new IllegalArgumentException(s"Unsupported IncidentLevel: $other")
   }
+
+  implicit val jsonFormat: OFormat[IncidentLevel] = derived.oformat[IncidentLevel]()
+
 }

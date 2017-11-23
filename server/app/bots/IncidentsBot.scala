@@ -4,14 +4,14 @@ import akka.util.Timeout
 import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMarkup}
 import pme.bots.callback
 import pme.bots.entity.FSMData
-import shared.IncidentLevel.{IncidentLevel, MEDIUM}
-import shared.IncidentStatus.{IncidentStatus, OPEN}
-import shared.IncidentType.{Garage, IncidentType}
-import shared.{Asset, Incident, IncidentTag}
+import shared.IncidentLevel.MEDIUM
+import shared.IncidentStatus.OPEN
+import shared.IncidentType.Garage
+import shared._
 
-import scala.util.Random
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Random
 
 trait IncidentsBot {
 

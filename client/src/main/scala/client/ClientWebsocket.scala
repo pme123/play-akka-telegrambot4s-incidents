@@ -1,7 +1,7 @@
 package client
 
 import org.scalajs.dom.raw._
-import org.scalajs.dom.{document, window}
+import org.scalajs.dom.window
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import shared.IncidentMsg.{IncidentHistory, NewIncident}
 import shared.{Incident, IncidentMsg}
@@ -21,7 +21,7 @@ case class ClientWebsocket(uiState: UIState)
         val message = Json.parse(e.data.toString)
         message.validate[IncidentMsg] match {
           case JsSuccess(NewIncident(incident), _) =>
-            newIncident(incident)
+            addIncident(incident)
           case JsSuccess(incidentHistory: IncidentHistory, _) =>
             replaceIncidents(incidentHistory.incidents)
           case JsSuccess(other, _) =>
@@ -36,7 +36,6 @@ case class ClientWebsocket(uiState: UIState)
     }
     socket.onopen = { (_: Event) =>
       println("websocket open!")
-      clearIncidents()
     }
     socket.onclose = { (e: CloseEvent) =>
       println("closed socket" + e.reason)
@@ -49,15 +48,7 @@ case class ClientWebsocket(uiState: UIState)
   private def replaceIncidents(newIncidents: Seq[Incident]) {
     clearIncidents()
     newIncidents
-      .reverse
-      .foreach(newIncident)
-  }
-
-  private def newIncident(incident: Incident) {
-    addIncident(incident)
-
-    val objDiv = document.getElementById("incident-panel")
-    objDiv.scrollTop = objDiv.scrollHeight - 20
+      .foreach(addIncident)
   }
 
 }
