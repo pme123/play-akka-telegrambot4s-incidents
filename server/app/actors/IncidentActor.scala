@@ -25,7 +25,7 @@ class IncidentActor @Inject()(implicit mat: Materializer, ec: ExecutionContext)
   incidents += Incident("dEr4s", IncidentLevel.URGENT, IncidentType.Garage, "Problem with the light.", IncidentStatus.IN_PROGRESS)
   incidents += Incident("r5hTr", IncidentLevel.MEDIUM, IncidentType.Elevator, "Strange noise when running.")
   incidents += Incident("pT444", IncidentLevel.INFO, IncidentType.Other, "Loud music after 22:00h in Apartment 23c.")
-  incidents += Incident("aZbcR", IncidentLevel.URGENT, IncidentType.Heating, "We are freezing! Fam. Meier 5d.")
+  incidents += Incident("aZbcR", IncidentLevel.URGENT, IncidentType.Heating, "We are freezing! Fam. Meier from the house 23 on level 23.")
   incidents += Incident("ZrW36", IncidentLevel.MEDIUM, IncidentType.Water, "Cold water in the bathroom of 45c.", IncidentStatus.DONE)
 
   // a map with all clients (Websocket-Actor) that needs the status about the process

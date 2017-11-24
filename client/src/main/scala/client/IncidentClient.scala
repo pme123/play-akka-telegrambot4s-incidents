@@ -1,6 +1,7 @@
 package client
 
-import com.thoughtworks.binding.Binding.Constants
+import org.scalajs.dom.raw.HTMLSpanElement
+import com.thoughtworks.binding.Binding.{BindingSeq, Constants}
 import com.thoughtworks.binding.{Binding, dom}
 import org.scalajs.dom.document
 import org.scalajs.dom.raw._
@@ -27,6 +28,7 @@ object IncidentClient
     socket.connectWS()
     import SemanticUI.jq2semantic
     jQuery(".ui.dropdown").dropdown(js.Dynamic.literal(on = "hover"))
+
   }
 
   @dom
@@ -167,39 +169,49 @@ object IncidentClient
 
   @dom
   private def showDetail(incident: Incident) =
-    <div class="detail-background">
-      <div class="main-panel detail-panel">
-        <div class="incident-row">
-          {renderTag(incident.level, "incident-level").bind}{//
-          renderTag(incident.status, "incident-status").bind}{//
-          renderTag(incident.incidentType, "incident-type").bind}{//
-          renderIdent(incident.ident).bind}
-          <button class="incident-show-detail" onclick={_: Event => clearEditIncident()}>
-            Close
-          </button>
-          <div class="incident-descr">
-            {incident.descr}
-          </div>
-
+  /* <div class="detail-background">
+    <div class="main-panel detail-panel">
+      <div class="incident-row">
+        {renderTag(incident.level, "incident-level").bind}{//
+        renderTag(incident.status, "incident-status").bind}{//
+        renderTag(incident.incidentType, "incident-type").bind}{//
+        renderIdent(incident.ident).bind}
+        <button class="incident-show-detail" onclick={_: Event => clearEditIncident()}>
+          Close
+        </button>
+        <div class="incident-descr">
+          {incident.descr}
         </div>
-        <div class="detail-images">
-          {Constants(incident.assets: _*).map(a => renderImage(a).bind)}
+
+      </div>
+      <div class="detail-images">
+        {Constants(incident.assets: _*).map(a => renderImage(a).bind)}
+      </div>
+    </div>
+  </div> */
+    <div class="detail-view ui modal">
+      <i class="close icon"></i>
+      <div class="header">
+        {incidentTable(Constants(incident).map(incidentRow(_, showDetail = false).bind)).bind}
+      </div>
+      <div class="image content">
+
+        <div class="description">
+
+          <div class="">
+            {if (incident.assets.isEmpty)
+            Constants(incident).map(noPhotos(_).bind)
+          else
+            Constants(incident.assets: _*).map(renderImage(_).bind)}
+          </div>
         </div>
       </div>
     </div>
 
   @dom
-  private def renderTag(tag: IncidentTag, cssClass: String) =
-    <div class={s"incident-tag $cssClass ${tag.name}"}>
-      {tag.label}
-    </div>
-
-  @dom
-  private def renderIdent(ident: String) =
-    <div class={s"incident-tag $ident"}>
-      <b>
-        {ident}
-      </b>
+  private def noPhotos(incident: Incident) =
+    <div class="ui header">
+      No Photos
     </div>
 
   @dom
@@ -225,40 +237,34 @@ object IncidentClient
           || in.ident.toLowerCase.contains(text.toLowerCase))
 
     <div id="incident-panel" class="ui main text container">
-
-      <table class="ui sortable basic table">
-        <thead>
-          <tr class="tree-header">
-            <th class="one wide"></th>
-            <th class="one wide"></th>
-            <th class="one wide"></th>
-            <th class="two wide"></th>
-            <th class="ten wide"></th>
-            <th class="one wide"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {Constants(filteredIncidents: _*).map(incidentRow(_).bind)}
-        </tbody>
-      </table>
+      {incidentTable(Constants(filteredIncidents: _*).map(incidentRow(_).bind)).bind}
     </div>
   }
 
   @dom
-  private def incidentRow(incident: Incident) =
+  private def incidentTable(content: BindingSeq[HTMLElement]) =
+    <table class="ui basic table">
+      <thead>
+        <tr class="tree-header">
+          <th class="one wide"></th>
+          <th class="one wide"></th>
+          <th class="one wide"></th>
+          <th class="two wide"></th>
+          <th class="ten wide"></th>
+          <th class="one wide"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {content.bind}
+      </tbody>
+    </table>
+
+  @dom
+  private def incidentRow(incident: Incident, showDetail: Boolean = true) =
     <tr>
-      <td data:data-tooltip={s"The level is ${incident.level.label}"}
-          data:data-position="right center">
-        <i class={"ui large " + SemanticUI.levelClass(incident.level)}></i>
-      </td>
-      <td data:data-tooltip={s"The status is ${incident.status.label}"}
-          data:data-position="right center">
-        <i class={"ui large " + SemanticUI.statusClass(incident.status)}></i>
-      </td>
-      <td data:data-tooltip={s"The type is ${incident.incidentType.label}"}
-          data:data-position="right center">
-        <i class={"ui large " + SemanticUI.typeClass(incident.incidentType)}></i>
-      </td>
+      {icon(incident.level, "Level").bind}{//
+      icon(incident.status, "Status").bind}{//
+      icon(incident.incidentType, "Type").bind}
       <td>
         {incident.ident}
       </td>
@@ -266,15 +272,35 @@ object IncidentClient
         {incident.descr}
       </td>
       <td>
-        <div class="circular small ui basic icon button"
-             onclick={_: Event => selectIncident(incident)}
-             data:data-tooltip={s"Show the details for ${incident.ident}"}
-             data:data-position="left center">
-          <i class="open envelope outline icon"></i>
-        </div>
+        {Constants((if (showDetail) Some(showDetailButton(incident)) else None).toSeq: _*)
+        .map(_.bind)}
       </td>
     </tr>
 
+  @dom
+  private def showDetailButton(incident: Incident) =
+    <div class="circular small ui basic icon button"
+         onclick={_: Event =>
+
+           import SemanticUI.jq2semantic
+
+           selectIncident(incident)
+           jQuery(".ui.modal").modal("show")}
+         data:data-tooltip={s"Show the details for ${incident.ident}"}
+         data:data-position="left center">
+      <i class="open envelope outline icon"></i>
+    </div>
+
+
+  @dom
+  private def icon(tag: IncidentTag, tagClass: String) =
+    <td data:data-tooltip={s"The $tagClass is ${tag.label}"}
+        data:data-position="right center">
+      <i class={"ui large " + SemanticUI.cssClass(tag)}></i>
+    </td>
+
   implicit def makeIntellijHappy(x: scala.xml.Elem): Binding[HTMLElement] = ???
+
+  //implicit def makeIntellijHappy2(x: Seq[HTMLElement]): BindingSeq[HTMLElement] = ???
 
 }

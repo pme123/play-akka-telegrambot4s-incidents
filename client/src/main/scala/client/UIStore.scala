@@ -13,7 +13,7 @@ trait UIStore {
 
   protected def addIncident(incident: Incident) {
     println(s"UIStore: addIncident $incident")
-    uiState.incidents.value += incident
+    uiState.incidents.value.insert(0, incident)
   }
 
   protected def selectIncident(incident: Incident) {
@@ -45,7 +45,6 @@ trait UIStore {
     println(s"UIStore: changeFilterStatus $status")
     uiState.filterStatus.value = status
   }
-
 
 }
 
