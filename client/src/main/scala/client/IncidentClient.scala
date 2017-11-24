@@ -66,7 +66,10 @@ object IncidentClient extends js.JSApp {
   }
 
   private def addIncident(incident: Incident) {
-    incidents.value.insert(0, incident)
+    val existingIncidents = incidents.value.filterNot(_.ident == incident.ident).toList
+    incidents.value.clear()
+    incidents.value ++= incident :: existingIncidents
+    println(s"incidents: $existingIncidents")
 
     val objDiv = document.getElementById("incident-panel")
     objDiv.scrollTop = objDiv.scrollHeight - 20
@@ -75,9 +78,10 @@ object IncidentClient extends js.JSApp {
   @dom
   private def incidentDiv(incident: Incident) =
     <div class="incident-row">
-      <div class={s"incident-type ${incident.incidentType.name}"}>
-        {incident.incidentType.name}
-      </div>
+      {renderTag(incident.level, "incident-level").bind}{//
+      renderTag(incident.status, "incident-status").bind}{//
+      renderTag(incident.incidentType, "incident-type").bind}{//
+      renderIdent(incident.ident).bind}
       <button class="incident-show-detail" onclick={event: Event => editIncident.value = Some(incident)}>
         Show Details
       </button>
@@ -115,13 +119,14 @@ object IncidentClient extends js.JSApp {
   }
 
   @dom
-  private def showDetail(incident: Incident) = {
+  private def showDetail(incident: Incident) =
     <div class="detail-background">
       <div class="main-panel detail-panel">
         <div class="incident-row">
-          <div class={s"incident-type ${incident.incidentType.name}"}>
-            {incident.incidentType.name}
-          </div>
+          {renderTag(incident.level, "incident-level").bind}{//
+          renderTag(incident.status, "incident-status").bind}{//
+          renderTag(incident.incidentType, "incident-type").bind}{//
+          renderIdent(incident.ident).bind}
           <button class="incident-show-detail" onclick={_: Event => editIncident.value = None}>
             Close
           </button>
@@ -136,7 +141,19 @@ object IncidentClient extends js.JSApp {
       </div>
     </div>
 
-  }
+  @dom
+  private def renderTag(tag: IncidentTag, cssClass: String) =
+    <div class={s"incident-tag $cssClass ${tag.name}"}>
+      {tag.label}
+    </div>
+
+  @dom
+  private def renderIdent(ident: String) =
+    <div class={s"incident-tag ${ident}"}>
+      <b>
+        {ident}
+      </b>
+    </div>
 
   @dom
   private def renderImage(asset: Asset) = {

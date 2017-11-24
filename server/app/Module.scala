@@ -1,4 +1,4 @@
-import bots.IncidentConversationSubscription
+import bots.{EditIncidentConversationSubscription, IncidentConversationSubscription}
 import com.google.inject.AbstractModule
 import play.api.libs.concurrent.AkkaGuiceSupport
 import pme.bots.boundary.BotRunner
@@ -29,6 +29,7 @@ class Module extends AbstractModule with AkkaGuiceSupport {
     // your Conversations:
     bind(classOf[CounterServiceSubscription]).asEagerSingleton()
     bind(classOf[IncidentConversationSubscription]).asEagerSingleton()
+    bind(classOf[EditIncidentConversationSubscription]).asEagerSingleton()
     // your RunAspects
     bind(classOf[LogStateSubscription]).asEagerSingleton()
   }

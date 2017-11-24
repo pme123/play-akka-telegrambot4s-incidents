@@ -2,12 +2,12 @@ package actors
 
 import javax.inject.Inject
 
-import actors.IncidentActor.{SubscribeIncident, UnSubscribeIncident}
+import actors.IncidentActor.{IncidentIdent, SubscribeIncident, UnSubscribeIncident}
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingReceive
 import akka.stream.Materializer
 import shared.IncidentMsg.{IncidentHistory, NewIncident}
-import shared.{Incident, IncidentMsg}
+import shared.{Incident, IncidentMsg, IncidentLevel, IncidentType}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
@@ -21,6 +21,8 @@ class IncidentActor @Inject()(implicit mat: Materializer, ec: ExecutionContext)
     with ActorLogging {
 
   private val incidents: mutable.ListBuffer[Incident] = mutable.ListBuffer()
+
+  incidents += Incident("dEr4s", IncidentLevel.URGENT, IncidentType.Garage, "Problem with the light.")
 
   // a map with all clients (Websocket-Actor) that needs the status about the process
   private val clientActors: mutable.Map[String, ActorRef] = mutable.Map()
@@ -42,6 +44,11 @@ class IncidentActor @Inject()(implicit mat: Materializer, ec: ExecutionContext)
     case incident: Incident =>
       log.info(s"new incident: $incident")
       newIncident(incident)
+      // bot asks for Incident for an ident
+    case IncidentIdent(ident) =>
+      log.info(s"requested incident for: $ident:: ${sender}")
+
+      sender ! incidents.find(_.ident == ident)
     // there is one message that is not handled (KeepAliveMsg)
     case other =>
       log.info(s"unexpected message: $other")
@@ -49,7 +56,10 @@ class IncidentActor @Inject()(implicit mat: Materializer, ec: ExecutionContext)
 
   // add the new Incident to the history and inform all the clients
   private def newIncident(incident: Incident) {
-    incidents.insert(0, incident)
+    val existingIncidents = incidents.filterNot(_.ident == incident.ident).toList
+    incidents.clear()
+    incidents ++= incident :: existingIncidents
+
     sendToSubscriber(NewIncident(incident))
   }
 
@@ -64,5 +74,7 @@ object IncidentActor {
   case class SubscribeIncident(clientId: String, wsActor: ActorRef)
 
   case class UnSubscribeIncident(clientId: String)
+
+  case class IncidentIdent(ident: String)
 
 }
