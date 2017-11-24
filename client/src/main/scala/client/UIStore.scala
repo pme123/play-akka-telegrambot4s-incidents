@@ -1,7 +1,7 @@
 package client
 
 import com.thoughtworks.binding.Binding.{Var, Vars}
-import shared.{Incident, IncidentLevel}
+import shared._
 
 trait UIStore {
   protected def uiState: UIState
@@ -31,9 +31,19 @@ trait UIStore {
     uiState.filterText.value = text
   }
 
-  protected def changeFilterLevel(level: IncidentLevel) {
+  protected def changeFilterLevel(level: IncidentTag) {
     println(s"UIStore: changeFilterLevel $level")
     uiState.filterLevel.value = level
+  }
+
+  protected def changeFilterType(incType: IncidentTag) {
+    println(s"UIStore: changeFilterType $incType")
+    uiState.filterType.value = incType
+  }
+
+  protected def changeFilterStatus(status: IncidentTag) {
+    println(s"UIStore: changeFilterStatus $status")
+    uiState.filterStatus.value = status
   }
 
 
@@ -42,5 +52,7 @@ trait UIStore {
 case class UIState(incidents: Vars[Incident] = Vars[Incident]()
                    , editIncident: Var[Option[Incident]] = Var[Option[Incident]](None)
                    , filterText: Var[String] = Var[String]("")
-                   , filterLevel: Var[IncidentLevel] = Var[IncidentLevel](IncidentLevel.INFO)
+                   , filterLevel: Var[IncidentTag] = Var[IncidentTag](IncidentLevel.INFO)
+                   , filterType: Var[IncidentTag] = Var[IncidentTag](IncidentTag.ALL)
+                   , filterStatus: Var[IncidentTag] = Var[IncidentTag](IncidentTag.ALL)
                   )

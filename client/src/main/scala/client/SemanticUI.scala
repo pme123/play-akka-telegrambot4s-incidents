@@ -1,6 +1,7 @@
 package client
 
 import org.scalajs.jquery.JQuery
+import shared.IncidentType.{Elevator, Garage, Heating, Other, Water}
 
 import scala.language.implicitConversions
 import scala.scalajs.js
@@ -35,5 +36,13 @@ object SemanticUI {
     case OPEN => "red warning icon"
     case IN_PROGRESS => "orange spinner icon"
     case DONE => "green checkmark box icon"
+  }
+
+  def typeClass(inType: IncidentType): String = inType match {
+    case Garage => "grey car icon"
+    case Heating => "grey thermometer half icon"
+    case Water => "grey bathtub icon"
+    case Elevator => "grey sort icon"
+    case Other => "grey help circle icon"
   }
 }

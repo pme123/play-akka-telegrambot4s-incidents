@@ -5,6 +5,9 @@ import com.thoughtworks.binding.{Binding, dom}
 import org.scalajs.dom.document
 import org.scalajs.dom.raw._
 import org.scalajs.jquery.jQuery
+import shared.IncidentLevel.INFO
+import shared.IncidentStatus.IN_PROGRESS
+import shared.IncidentTag.ALL
 import shared._
 
 import scala.language.implicitConversions
@@ -46,6 +49,8 @@ object IncidentClient
         {//
         textFilter.bind}{//
         levelFilter.bind}{//
+        statusFilter.bind}{//
+        typeFilter.bind}{//
         clearButton.bind}
       </div>
     </div>
@@ -74,25 +79,70 @@ object IncidentClient
   @dom
   private def levelFilter = {
     implicit def stringToBoolean(str: String): Boolean = str == "true"
-    import shared.IncidentLevel._
     <div class="ui item"
          data:data-tooltip="Filter the Incidents by its Level"
          data:data-position="bottom right">
-      <select id="filterSelect"
+      <select id="levelFilterSelect"
               class="ui compact dropdown"
               onchange={_: Event =>
-                changeFilterLevel(IncidentLevel.levelFrom(s"${filterSelect.value}"))}>
-        <option value={URGENT.name}>
-          {URGENT.label}
-        </option>
-        <option value={MEDIUM.name}>
-          {MEDIUM.label}
-        </option>
-        <option value={INFO.name} selected="true">
-          {INFO.label}
-        </option>
+                changeFilterLevel( if (s"${levelFilterSelect.value}" == ALL.name) ALL
+                else
+                  IncidentLevel.levelFrom(s"${levelFilterSelect.value}"))}>
+        {filterOptions(IncidentLevel.all, uiState.filterLevel.value).bind}
       </select>
     </div>
+  }
+
+  @dom
+  private def statusFilter = {
+    <div class="ui item"
+         data:data-tooltip="Filter the Incidents by its Level"
+         data:data-position="bottom right">
+      <select id="statusFilterSelect"
+              class="ui compact dropdown"
+              onchange={_: Event =>
+                changeFilterStatus(
+                  if (s"${statusFilterSelect.value}" == ALL.name) ALL
+                  else
+                    IncidentStatus.statusFrom(s"${statusFilterSelect.value}"))}>
+        {filterOptions(IncidentStatus.all, uiState.filterStatus.value).bind}
+      </select>
+    </div>
+  }
+
+  @dom
+  private def typeFilter = {
+    implicit def stringToBoolean(str: String): Boolean = str == "true"
+
+    <div class="ui item"
+         data:data-tooltip="Filter the Incidents by its Level"
+         data:data-position="bottom right">
+      <select id="typeFilterSelect"
+              class="ui compact dropdown"
+              onchange={_: Event =>
+                changeFilterType(
+                  if (s"${typeFilterSelect.value}" == ALL.name) ALL
+                  else
+                    IncidentType.typeFrom(s"${typeFilterSelect.value}")
+                )}>
+        {filterOptions(IncidentType.all, uiState.filterType.value).bind}
+      </select>
+    </div>
+  }
+
+  @dom
+  private def filterOptions(tags: Seq[IncidentTag]
+                            , selected: IncidentTag) = {
+    Constants(
+      (tags :+ ALL).map(l => tagOption(l, selected))
+        : _*).map(_.bind)
+  }
+
+  @dom
+  private def tagOption(l: IncidentTag, selected: IncidentTag) = {
+    <option value={l.name} selected={l == selected}>
+      {l.label}
+    </option>
   }
 
   @dom
@@ -106,21 +156,6 @@ object IncidentClient
       </button>
     </div>
   }
-
-  @dom
-  private def incidentDiv(incident: Incident) =
-    <div class="incident-row">
-      {renderTag(incident.level, "incident-level").bind}{//
-      renderTag(incident.status, "incident-status").bind}{//
-      renderTag(incident.incidentType, "incident-type").bind}{//
-      renderIdent(incident.ident).bind}<button class="incident-show-detail" onclick={_: Event => selectIncident(incident)}>
-      Show Details
-    </button>
-      <div class="incident-descr">
-        {incident.descr}
-      </div>
-
-    </div>
 
   @dom
   private def renderDetail = {
@@ -179,9 +214,13 @@ object IncidentClient
     val incidents = uiState.incidents.bind
     val text = uiState.filterText.bind
     val level = uiState.filterLevel.bind
+    val status = uiState.filterStatus.bind
+    val incType = uiState.filterType.bind
     val filteredIncidents =
       incidents
-        .filter(in => in.level >= level)
+        .filter(in => in.level.filter(level) || level == ALL)
+        .filter(in => in.status.filter(status) || status == ALL)
+        .filter(in => in.incidentType.filter(incType) || incType == ALL)
         .filter(in => in.descr.toLowerCase.contains(text.toLowerCase)
           || in.ident.toLowerCase.contains(text.toLowerCase))
 
@@ -192,8 +231,9 @@ object IncidentClient
           <tr class="tree-header">
             <th class="one wide"></th>
             <th class="one wide"></th>
-            <th class="two wide">Ident</th>
-            <th class="eleven wide">Description</th>
+            <th class="one wide"></th>
+            <th class="two wide"></th>
+            <th class="ten wide"></th>
             <th class="one wide"></th>
           </tr>
         </thead>
@@ -207,23 +247,25 @@ object IncidentClient
   @dom
   private def incidentRow(incident: Incident) =
     <tr>
-      <td class="one wide"
-          data:data-tooltip={s"The level is ${incident.level.label}"}
+      <td data:data-tooltip={s"The level is ${incident.level.label}"}
           data:data-position="right center">
         <i class={"ui large " + SemanticUI.levelClass(incident.level)}></i>
       </td>
-      <td class="one wide"
-          data:data-tooltip={s"The status is ${incident.status.label}"}
+      <td data:data-tooltip={s"The status is ${incident.status.label}"}
           data:data-position="right center">
         <i class={"ui large " + SemanticUI.statusClass(incident.status)}></i>
       </td>
-      <td class="two wide">
+      <td data:data-tooltip={s"The type is ${incident.incidentType.label}"}
+          data:data-position="right center">
+        <i class={"ui large " + SemanticUI.typeClass(incident.incidentType)}></i>
+      </td>
+      <td>
         {incident.ident}
       </td>
-      <td class="five wide">
+      <td>
         {incident.descr}
       </td>
-      <td class="one wide">
+      <td>
         <div class="circular small ui basic icon button"
              onclick={_: Event => selectIncident(incident)}
              data:data-tooltip={s"Show the details for ${incident.ident}"}

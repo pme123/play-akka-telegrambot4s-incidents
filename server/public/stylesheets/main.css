@@ -4,7 +4,6 @@
     overflow: auto;
 }
 
-.tree-header, .tree-header > th {
-    border: #dddddd;
-    background-color: #dddddd;
+.tree-header {
+    display: none;
 }

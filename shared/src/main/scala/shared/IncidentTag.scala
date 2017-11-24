@@ -2,6 +2,7 @@ package shared
 
 import julienrf.json.derived
 import play.api.libs.json.OFormat
+import shared.IncidentTag.ALL
 
 trait IncidentTag {
   def name: String
@@ -10,20 +11,31 @@ trait IncidentTag {
 
  // require(name != null && name.length >= 3, "A name is required to have at least 3 characters")
 
+  // by default filter all
+  def filter(level: IncidentTag): Boolean = true
+
 }
 
 object IncidentTag {
+
+  case object ALL extends IncidentStatus {
+    val name = "ALL"
+  }
 
   //implicit lazy val jsonFormat: OFormat[IncidentTag] = derived.oformat[IncidentTag]()
 }
 
 sealed trait IncidentType extends IncidentTag {
+
+  override def filter(level: IncidentTag): Boolean = level == this
+
 }
 
 object IncidentType {
 
   case object Heating extends IncidentType {
     val name = "Heating"
+
   }
 
   case object Water extends IncidentType {
@@ -41,6 +53,8 @@ object IncidentType {
   case object Other extends IncidentType {
     val name = "Other"
   }
+
+  val all = Seq(Heating, Water, Elevator, Garage, Other)
 
   def typeFrom(name: String): IncidentType = name match {
     case Heating.name => Heating
@@ -67,10 +81,16 @@ object IncidentStatus {
   case object IN_PROGRESS extends IncidentStatus {
     val name = "IN_PROGRESS"
     override val label = "IN PROGRESS"
+
+    override def filter(status: IncidentTag): Boolean = status != OPEN
+
   }
 
   case object DONE extends IncidentStatus {
     val name = "DONE"
+
+    override def filter(status: IncidentTag): Boolean = status == DONE
+
   }
 
   val all = Seq(OPEN, IN_PROGRESS, DONE)
@@ -87,27 +107,24 @@ object IncidentStatus {
 }
 
 sealed trait IncidentLevel extends IncidentTag {
-  def >=(level: IncidentLevel): Boolean
 }
 
 object IncidentLevel {
 
   case object URGENT extends IncidentLevel {
     val name = "URGENT"
-
-    def >=(level: IncidentLevel): Boolean = true
   }
 
   case object MEDIUM extends IncidentLevel {
     val name = "MEDIUM"
 
-    def >=(level: IncidentLevel): Boolean = level != URGENT
+    override def filter(level: IncidentTag): Boolean = level != URGENT
   }
 
   case object INFO extends IncidentLevel {
     val name = "INFO"
 
-    def >=(level: IncidentLevel): Boolean = level == INFO
+    override def filter(level: IncidentTag): Boolean = level == INFO
   }
 
   def all = Seq(INFO, MEDIUM, URGENT)
