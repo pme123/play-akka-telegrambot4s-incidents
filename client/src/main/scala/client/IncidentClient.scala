@@ -1,13 +1,11 @@
 package client
 
-import org.scalajs.dom.raw.HTMLSpanElement
+import client.SortColumn._
 import com.thoughtworks.binding.Binding.{BindingSeq, Constants}
 import com.thoughtworks.binding.{Binding, dom}
 import org.scalajs.dom.document
 import org.scalajs.dom.raw._
 import org.scalajs.jquery.jQuery
-import shared.IncidentLevel.INFO
-import shared.IncidentStatus.IN_PROGRESS
 import shared.IncidentTag.ALL
 import shared._
 
@@ -81,13 +79,14 @@ object IncidentClient
   @dom
   private def levelFilter = {
     implicit def stringToBoolean(str: String): Boolean = str == "true"
+
     <div class="ui item"
          data:data-tooltip="Filter the Incidents by its Level"
          data:data-position="bottom right">
       <select id="levelFilterSelect"
               class="ui compact dropdown"
               onchange={_: Event =>
-                changeFilterLevel( if (s"${levelFilterSelect.value}" == ALL.name) ALL
+                changeFilterLevel(if (s"${levelFilterSelect.value}" == ALL.name) ALL
                 else
                   IncidentLevel.levelFrom(s"${levelFilterSelect.value}"))}>
         {filterOptions(IncidentLevel.all, uiState.filterLevel.value).bind}
@@ -169,43 +168,17 @@ object IncidentClient
 
   @dom
   private def showDetail(incident: Incident) =
-  /* <div class="detail-background">
-    <div class="main-panel detail-panel">
-      <div class="incident-row">
-        {renderTag(incident.level, "incident-level").bind}{//
-        renderTag(incident.status, "incident-status").bind}{//
-        renderTag(incident.incidentType, "incident-type").bind}{//
-        renderIdent(incident.ident).bind}
-        <button class="incident-show-detail" onclick={_: Event => clearEditIncident()}>
-          Close
-        </button>
-        <div class="incident-descr">
-          {incident.descr}
-        </div>
-
-      </div>
-      <div class="detail-images">
-        {Constants(incident.assets: _*).map(a => renderImage(a).bind)}
-      </div>
-    </div>
-  </div> */
     <div class="detail-view ui modal">
       <i class="close icon"></i>
       <div class="header">
-        {incidentTable(Constants(incident).map(incidentRow(_, showDetail = false).bind)).bind}
-      </div>
-      <div class="image content">
-
-        <div class="description">
-
-          <div class="">
-            {if (incident.assets.isEmpty)
-            Constants(incident).map(noPhotos(_).bind)
-          else
-            Constants(incident.assets: _*).map(renderImage(_).bind)}
-          </div>
-        </div>
-      </div>
+        {incidentTable(
+        Constants(incident)
+          .map(incidentRow(_, showDetail = false).bind)
+        , showDetail = false).bind}
+      </div>{if (incident.assets.isEmpty)
+      Constants(incident).map(noPhotos(_).bind)
+    else
+      Constants(incident.assets: _*).map(renderImage(_).bind)}
     </div>
 
   @dom
@@ -216,7 +189,7 @@ object IncidentClient
 
   @dom
   private def renderImage(asset: Asset) = {
-    <div class="detail-image">
+    <div class="image content">
       <img src={asset.path}></img>
     </div>
   }
@@ -228,6 +201,8 @@ object IncidentClient
     val level = uiState.filterLevel.bind
     val status = uiState.filterStatus.bind
     val incType = uiState.filterType.bind
+    val sort = uiState.sort.bind
+    println(s"sort: $sort")
     val filteredIncidents =
       incidents
         .filter(in => in.level.filter(level) || level == ALL)
@@ -235,6 +210,7 @@ object IncidentClient
         .filter(in => in.incidentType.filter(incType) || incType == ALL)
         .filter(in => in.descr.toLowerCase.contains(text.toLowerCase)
           || in.ident.toLowerCase.contains(text.toLowerCase))
+        .sortWith((a, b) => sort.sort(a, b))
 
     <div id="incident-panel" class="ui main text container">
       {incidentTable(Constants(filteredIncidents: _*).map(incidentRow(_).bind)).bind}
@@ -242,16 +218,15 @@ object IncidentClient
   }
 
   @dom
-  private def incidentTable(content: BindingSeq[HTMLElement]) =
+  private def incidentTable(content: BindingSeq[HTMLElement], showDetail: Boolean = true) =
     <table class="ui basic table">
       <thead>
-        <tr class="tree-header">
-          <th class="one wide"></th>
-          <th class="one wide"></th>
-          <th class="one wide"></th>
-          <th class="two wide"></th>
-          <th class="ten wide"></th>
-          <th class="one wide"></th>
+        <tr class={if (showDetail) "show-header" else "hide-header"}>
+          {sortIcon(LEVEL).bind}{//
+          sortIcon(STATUS).bind}{//
+          sortIcon(TYPE).bind}{//
+          sortIcon(IDENT, "two", "left").bind}{//
+          sortIcon(DESCR, "ten", "left").bind}
         </tr>
       </thead>
       <tbody>
@@ -260,14 +235,32 @@ object IncidentClient
     </table>
 
   @dom
+  private def sortIcon(sortColumn: SortColumn
+                       , columnSize: String = "one"
+                       , align: String = "center") = {
+    val sortClass = uiState.sort.value match {
+      case Sort(sc, asc) if sortColumn == sc =>
+        if (asc) "caret up" else "caret down"
+      case _ =>
+        "sort"
+    }
+    <th class={s"$columnSize wide"}>
+      <div class={s"$align aligned"}
+           onclick={_: Event => changeSort(sortColumn)}>
+        <i class={s"small $sortClass icon"}></i>
+      </div>
+    </th>
+
+  }
+
+  @dom
   private def incidentRow(incident: Incident, showDetail: Boolean = true) =
     <tr>
       {icon(incident.level, "Level").bind}{//
       icon(incident.status, "Status").bind}{//
-      icon(incident.incidentType, "Type").bind}
-      <td>
-        {incident.ident}
-      </td>
+      icon(incident.incidentType, "Type").bind}<td>
+      {incident.ident}
+    </td>
       <td>
         {incident.descr}
       </td>
@@ -300,7 +293,5 @@ object IncidentClient
     </td>
 
   implicit def makeIntellijHappy(x: scala.xml.Elem): Binding[HTMLElement] = ???
-
-  //implicit def makeIntellijHappy2(x: Seq[HTMLElement]): BindingSeq[HTMLElement] = ???
 
 }

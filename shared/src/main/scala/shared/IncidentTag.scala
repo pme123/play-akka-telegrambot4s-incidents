@@ -2,7 +2,6 @@ package shared
 
 import julienrf.json.derived
 import play.api.libs.json.OFormat
-import shared.IncidentTag.ALL
 
 trait IncidentTag {
   def name: String
@@ -18,7 +17,7 @@ trait IncidentTag {
 
 object IncidentTag {
 
-  case object ALL extends IncidentStatus {
+  case object ALL extends IncidentTag {
     val name = "ALL"
   }
 
@@ -28,6 +27,8 @@ object IncidentTag {
 sealed trait IncidentType extends IncidentTag {
 
   override def filter(level: IncidentTag): Boolean = level == this
+
+  def isBefore(incType: IncidentType): Boolean = name.compareTo(incType.name) <= 0
 
 }
 
@@ -70,12 +71,15 @@ object IncidentType {
 }
 
 sealed trait IncidentStatus extends IncidentTag {
+  def isBefore(status: IncidentStatus): Boolean
 }
 
 object IncidentStatus {
 
   case object OPEN extends IncidentStatus {
     val name = "OPEN"
+
+    def isBefore(status: IncidentStatus): Boolean = true
   }
 
   case object IN_PROGRESS extends IncidentStatus {
@@ -84,12 +88,16 @@ object IncidentStatus {
 
     override def filter(status: IncidentTag): Boolean = status != OPEN
 
+    def isBefore(status: IncidentStatus): Boolean = status != DONE
+
   }
 
   case object DONE extends IncidentStatus {
     val name = "DONE"
 
     override def filter(status: IncidentTag): Boolean = status == DONE
+
+    def isBefore(status: IncidentStatus): Boolean = false
 
   }
 
@@ -107,24 +115,31 @@ object IncidentStatus {
 }
 
 sealed trait IncidentLevel extends IncidentTag {
+  def isBefore(level: IncidentLevel): Boolean
 }
 
 object IncidentLevel {
 
   case object URGENT extends IncidentLevel {
     val name = "URGENT"
+
+    def isBefore(level: IncidentLevel): Boolean = true
   }
 
   case object MEDIUM extends IncidentLevel {
     val name = "MEDIUM"
 
     override def filter(level: IncidentTag): Boolean = level != URGENT
+
+    def isBefore(level: IncidentLevel): Boolean = level == INFO
   }
 
   case object INFO extends IncidentLevel {
     val name = "INFO"
 
     override def filter(level: IncidentTag): Boolean = level == INFO
+
+    def isBefore(level: IncidentLevel): Boolean = false
   }
 
   def all = Seq(INFO, MEDIUM, URGENT)

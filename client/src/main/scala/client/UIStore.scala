@@ -1,5 +1,7 @@
 package client
 
+import client.IncidentClient.uiState
+import client.SortColumn.LEVEL
 import com.thoughtworks.binding.Binding.{Var, Vars}
 import shared._
 
@@ -13,6 +15,8 @@ trait UIStore {
 
   protected def addIncident(incident: Incident) {
     println(s"UIStore: addIncident $incident")
+    uiState.incidents.value.filter(_.ident == incident.ident)
+      .foreach(uiState.incidents.value -= _)
     uiState.incidents.value.insert(0, incident)
   }
 
@@ -46,6 +50,17 @@ trait UIStore {
     uiState.filterStatus.value = status
   }
 
+  protected def changeSort(sortColumn: SortColumn) {
+    println(s"UIStore: changeSort $sortColumn")
+    val isAsc = uiState.sort.value match {
+      case Sort(sc, asc) if sortColumn == sc =>
+        !asc
+      case _ =>
+        true
+    }
+    uiState.sort.value = Sort(sortColumn, isAsc)
+  }
+
 }
 
 case class UIState(incidents: Vars[Incident] = Vars[Incident]()
@@ -54,4 +69,46 @@ case class UIState(incidents: Vars[Incident] = Vars[Incident]()
                    , filterLevel: Var[IncidentTag] = Var[IncidentTag](IncidentLevel.INFO)
                    , filterType: Var[IncidentTag] = Var[IncidentTag](IncidentTag.ALL)
                    , filterStatus: Var[IncidentTag] = Var[IncidentTag](IncidentTag.ALL)
+                   , sort: Var[Sort] = Var[Sort](Sort())
+                   ,
                   )
+
+sealed trait SortColumn {
+  def sort(a: Incident, b: Incident): Boolean
+
+}
+
+object SortColumn {
+
+  case object LEVEL extends SortColumn {
+    def sort(a: Incident, b: Incident): Boolean = a.level.isBefore(b.level)
+  }
+
+  case object STATUS extends SortColumn {
+    def sort(a: Incident, b: Incident): Boolean = a.status.isBefore(b.status)
+  }
+
+  case object TYPE extends SortColumn {
+    def sort(a: Incident, b: Incident): Boolean = a.incidentType.isBefore(b.incidentType)
+  }
+
+  case object IDENT extends SortColumn {
+    def sort(a: Incident, b: Incident): Boolean = a.ident.compareToIgnoreCase(b.ident) <= 0
+  }
+
+  case object DESCR extends SortColumn {
+    def sort(a: Incident, b: Incident): Boolean = a.descr.compareToIgnoreCase(b.descr) <= 0
+  }
+
+}
+
+case class Sort(sortColumn: SortColumn = LEVEL
+                , isAsc: Boolean = true) {
+
+  def sort(a: Incident, b: Incident): Boolean =
+    if (isAsc)
+      sortColumn.sort(a, b)
+    else
+      sortColumn.sort(b, a)
+
+}
