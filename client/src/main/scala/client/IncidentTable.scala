@@ -7,6 +7,8 @@ import org.scalajs.dom.raw.{Event, HTMLElement}
 import org.scalajs.jquery.jQuery
 import shared.{Incident, IncidentTag}
 
+import scala.scalajs.js.timers._
+
 trait IncidentTable
   extends UIStore
     with IncidentImplicits {
@@ -70,11 +72,12 @@ trait IncidentTable
   private def showDetailButton(incident: Incident) =
     <div class="circular small ui basic icon button"
          onclick={_: Event =>
-
-           import SemanticUI.jq2semantic
-
            selectIncident(incident)
-           jQuery(".ui.modal").modal("show")}
+
+           setTimeout(200) {
+             import SemanticUI.jq2semantic
+             jQuery(".ui.modal").modal("show")
+           }}
          data:data-tooltip={s"Show the details for ${incident.ident}"}
          data:data-position="left center">
       <i class="open envelope outline icon"></i>

@@ -11,8 +11,7 @@ private[client] case class IncidentDetailView(incident: Incident, uiState: UISta
 
   @dom
   private[client] def showDetail(): Binding[HTMLElement] =
-    <div class="detail-view ui modal">
-      <i class="close icon"></i>
+    <div class="ui modal">
       <div class="header">
         {incidentTable(
         Constants(incident)
