@@ -10,7 +10,8 @@ case class Incident(ident: String
                     , incidentType: IncidentType
                     , descr: String
                     , status: IncidentStatus = OPEN
-                    , assets: List[Asset] = Nil) {
+                    , assets: List[Asset] = Nil
+                    , audits: List[Audit] = Nil) {
   require(descr.length > 4)
 }
 
@@ -24,4 +25,11 @@ case class Asset(fileId: String, path: String)
 object Asset {
   implicit val jsonFormat: OFormat[Asset] = derived.oformat[Asset]()
 
+}
+
+case class Audit(user: String
+                 /*, dateTime: LocalDateTime = LocalDateTime.now()*/)
+
+object Audit {
+  implicit val jsonFormat: OFormat[Audit] = derived.oformat[Audit]()
 }

@@ -56,8 +56,9 @@ class EditIncidentConversation(incidentActor: ActorRef)
         case Some(ident) =>
           (incidentActor ? IncidentIdent(ident)).map {
             case Some(incident: Incident) =>
+              val user: String = extractUser(msg)
               bot.sendMessage(msg, s"Ok what do you want to do?", editIncidentMarkup)
-              self ! ExecutionResult(SelectAction, IncidentData(incident))
+              self ! ExecutionResult(SelectAction, IncidentData(user, incident))
             case Some(other) =>
               other match {
                 case Success(unexpected) =>

@@ -3,7 +3,7 @@ package bots
 import javax.inject.{Inject, Named, Singleton}
 
 import akka.actor.{ActorRef, ActorSystem, Props}
-import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMarkup}
+import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMarkup, Message}
 import pme.bots.control.ChatConversation
 import pme.bots.entity.SubscrType.SubscrConversation
 import pme.bots.entity.{Command, FSMState, Subscription}
@@ -54,11 +54,12 @@ class IncidentConversation(incidentActor: ActorRef)
       // now we check the callback data
       callbackData match {
         case Some(data) =>
+          val user: String = extractUser(msg)
           // ask the user for a description, as it is a text input no markup is needed.
           bot.sendMessage(msg, "What is the urgency (level):"
             , incidentLevelMarkup)
           // when we go to the next step we add the IncidentType to the FSM.
-          goto(SelectIncidentLevel) using IncidentData(incidentType = typeFrom(data))
+          goto(SelectIncidentLevel) using IncidentData(user, typeFrom(data))
         case None =>
           // when the user does not press a button - remind the user what we need
           bot.sendMessage(msg, "First you have to select the incident type!"

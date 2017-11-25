@@ -1,7 +1,7 @@
 package bots
 
 import akka.util.Timeout
-import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMarkup}
+import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMarkup, Message}
 import pme.bots.callback
 import pme.bots.entity.FSMData
 import shared.IncidentLevel.MEDIUM
@@ -29,19 +29,45 @@ trait IncidentsBot {
 
   protected def tag(name: String): String = callback + name
 
+  // extracts the user and returns a string, like:
+  // 'firstName lastName (username)'
+  protected def extractUser(msg: Message): String = {
+    val user = msg.from.map { u =>
+      val username = u.username.map(un => s"($un)").getOrElse("")
+      val lastName = u.lastName.getOrElse("")
+      val name = s"${u.firstName} $lastName".trim
+      s"$name $username"
+    }.getOrElse("unknown user")
+    user
+  }
+
   case class IncidentData(ident: String = Random.alphanumeric.take(4).mkString
                           , status: IncidentStatus = OPEN
                           , level: IncidentLevel = MEDIUM
                           , incidentType: IncidentType = Garage
                           , descr: String = "NOT SET"
-                          , assets: List[Asset] = Nil) extends FSMData {
+                          , assets: List[Asset] = Nil
+                          , audits: List[Audit]) extends FSMData {
 
-    def toIncident: Incident = Incident(ident, level, incidentType, descr, status, assets)
+    def toIncident: Incident = Incident(ident, level, incidentType, descr, status, assets, audits)
 
   }
 
   object IncidentData {
-    def apply(incident: Incident): IncidentData = new IncidentData(incident.ident, incident.status, incident.level, incident.incidentType, incident.descr, incident.assets)
+
+    def apply(user: String, incidentType: IncidentType): IncidentData =
+      IncidentData(incidentType = incidentType, audits = List(Audit(user))
+      )
+
+    def apply(user: String, incident: Incident): IncidentData =
+      new IncidentData(
+        incident.ident
+        , incident.status
+        , incident.level
+        , incident.incidentType
+        , incident.descr
+        , incident.assets
+        , Audit(user) :: incident.audits)
   }
 
 }
