@@ -88,7 +88,7 @@ object IncidentStatus {
 
     override def filter(status: IncidentTag): Boolean = status != OPEN
 
-    def isBefore(status: IncidentStatus): Boolean = status != DONE
+    def isBefore(status: IncidentStatus): Boolean = status != OPEN
 
   }
 

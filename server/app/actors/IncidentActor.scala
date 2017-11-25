@@ -22,7 +22,8 @@ class IncidentActor @Inject()(implicit mat: Materializer, ec: ExecutionContext)
 
   private val incidents: mutable.ListBuffer[Incident] = mutable.ListBuffer()
 
-  incidents += Incident("dEr4s", IncidentLevel.URGENT, IncidentType.Garage, "Problem with the light.", IncidentStatus.IN_PROGRESS)
+  incidents += Incident("dEr4s", IncidentLevel.URGENT, IncidentType.Garage, "Problem with the light."
+    , IncidentStatus.IN_PROGRESS, audits = List(Audit("Peter Starck (pstark)"),Audit("Hans (hans123)"),Audit("unknown user")))
   incidents += Incident("r5hTr", IncidentLevel.MEDIUM, IncidentType.Elevator, "Strange noise when running.")
   incidents += Incident("pT444", IncidentLevel.INFO, IncidentType.Other, "Loud music after 22:00h in Apartment 23c.")
   incidents += Incident("aZbcR", IncidentLevel.URGENT, IncidentType.Heating, "We are freezing! Fam. Meier from the house 23 on level 23.")

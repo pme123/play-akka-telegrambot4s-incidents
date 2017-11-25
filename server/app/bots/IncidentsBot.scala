@@ -30,15 +30,17 @@ trait IncidentsBot {
   protected def tag(name: String): String = callback + name
 
   // extracts the user and returns a string, like:
-  // 'firstName lastName (username)'
+  // 'firstName lastName - username'
   protected def extractUser(msg: Message): String = {
-    val user = msg.from.map { u =>
-      val username = u.username.map(un => s"($un)").getOrElse("")
-      val lastName = u.lastName.getOrElse("")
-      val name = s"${u.firstName} $lastName".trim
-      s"$name $username"
-    }.getOrElse("unknown user")
-    user
+    val username = msg.chat.username.map(un => s"$un").getOrElse("")
+    val lastName = msg.chat.lastName.getOrElse("")
+    val firstName = msg.chat.firstName.getOrElse("")
+    val name = s"$firstName $lastName - $username"
+
+    if (name.trim.length <= 1)
+      "unknown user"
+    else
+      name.trim
   }
 
   case class IncidentData(ident: String = Random.alphanumeric.take(4).mkString

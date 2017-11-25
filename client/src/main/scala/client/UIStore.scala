@@ -1,6 +1,5 @@
 package client
 
-import client.IncidentClient.uiState
 import client.SortColumn.LEVEL
 import com.thoughtworks.binding.Binding.{Var, Vars}
 import shared._
@@ -70,7 +69,6 @@ case class UIState(incidents: Vars[Incident] = Vars[Incident]()
                    , filterType: Var[IncidentTag] = Var[IncidentTag](IncidentTag.ALL)
                    , filterStatus: Var[IncidentTag] = Var[IncidentTag](IncidentTag.ALL)
                    , sort: Var[Sort] = Var[Sort](Sort())
-                   ,
                   )
 
 sealed trait SortColumn {
