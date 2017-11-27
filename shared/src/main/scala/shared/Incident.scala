@@ -1,7 +1,9 @@
 package shared
 
+import java.time.Instant
+
 import julienrf.json.derived
-import play.api.libs.json.OFormat
+import play.api.libs.json._
 import shared.IncidentStatus.OPEN
 
 
@@ -27,9 +29,36 @@ object Asset {
 
 }
 
+import AuditAction._
 case class Audit(user: String
-                 /*, dateTime: LocalDateTime = LocalDateTime.now()*/)
+                 , action: AuditAction = incidentCreated
+                 , dateTime: Instant = Instant.now()
+                )
 
 object Audit {
+
+  implicit val localDateTimeReads: Reads[Instant] =
+    (json: JsValue) => {
+      json.validate[Long]
+        .map { epochSecond =>
+          Instant.ofEpochSecond(epochSecond)
+        }
+    }
+
+  implicit val localDateTimeWrites: Writes[Instant] =
+    (instant: Instant) => JsNumber(instant.getEpochSecond)
+
   implicit val jsonFormat: OFormat[Audit] = derived.oformat[Audit]()
+
+}
+
+
+object AuditAction {
+  type AuditAction = String
+
+  val incidentCreated = "Incident Created"
+  val statusChanged = "Status Changed"
+  val levelChanged = "Level Changed"
+  val photoAdded = "Photo Added"
+
 }

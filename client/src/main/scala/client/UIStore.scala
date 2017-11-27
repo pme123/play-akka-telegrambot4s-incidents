@@ -1,6 +1,6 @@
 package client
 
-import client.SortColumn.LEVEL
+import client.SortColumn.AUDIT
 import com.thoughtworks.binding.Binding.{Var, Vars}
 import shared._
 
@@ -98,9 +98,14 @@ object SortColumn {
     def sort(a: Incident, b: Incident): Boolean = a.descr.compareToIgnoreCase(b.descr) <= 0
   }
 
+  case object AUDIT extends SortColumn {
+    def sort(a: Incident, b: Incident): Boolean =
+      a.audits.head.dateTime.getEpochSecond >= b.audits.head.dateTime.getEpochSecond
+  }
+
 }
 
-case class Sort(sortColumn: SortColumn = LEVEL
+case class Sort(sortColumn: SortColumn = AUDIT
                 , isAsc: Boolean = true) {
 
   def sort(a: Incident, b: Incident): Boolean =

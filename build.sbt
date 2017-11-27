@@ -53,7 +53,6 @@ lazy val client = (project in file("client")).settings(
   libraryDependencies ++= Seq(
     "org.scala-js" %%% "scalajs-dom" % "0.9.3",
     "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-    "com.typesafe.play" %%% "play-json" % "2.6.1",
     "com.thoughtworks.binding" %%% "dom" % "11.0.0-M4",
     "com.thoughtworks.binding" %%% "futurebinding" % "11.0.0-M4",
     "fr.hmil" %%% "roshttp" % "2.0.2",

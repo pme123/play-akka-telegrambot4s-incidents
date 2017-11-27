@@ -2,6 +2,7 @@ package bots
 
 import akka.util.Timeout
 import info.mukel.telegrambot4s.models.{InlineKeyboardButton, InlineKeyboardMarkup, Message}
+import play.api.libs.json.Reads
 import pme.bots.callback
 import pme.bots.entity.FSMData
 import shared.IncidentLevel.MEDIUM

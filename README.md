@@ -31,15 +31,7 @@ Next to the model all that is needed is the JSON-un-/-marshalling. Thanks to the
 Here is the whole class: [SharedMessages](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/shared/src/main/scala/shared/SharedMessages.scala)
 
 # Client
-Once again it's build with [Binding.scala](https://github.com/ThoughtWorksInc/Binding.scala)
-
-Thanks to that, the code fits in 150 lines: [IncidentClient](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/client/src/main/scala/client/IncidentClient.scala)
-
-It is more or less HTML-snippets that contain dynamic content provided by Binding.scala:
-* `Vars[Incident]` hosts all reported incidents.
-* `Var[Option[Incident]]` is set if a User wants to see a detail of an incident.
-
-If you have troubles understanding it, please check out [Binding.scala-Google-Maps](https://github.com/pme123/Binding.scala-Google-Maps), where I explained all the details.
+Has its own [README](client/README.md)
 
 # Server
 The server part can be split into the following sub-chapters:

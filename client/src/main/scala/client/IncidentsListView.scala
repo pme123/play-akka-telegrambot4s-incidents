@@ -16,7 +16,7 @@ case class IncidentsListView(uiState: UIState)
     val status = uiState.filterStatus.bind
     val incType = uiState.filterType.bind
     val sort = uiState.sort.bind
-    println(s"sort: $sort")
+
     val filteredIncidents =
       incidents
         .filter(in => in.level.filter(level) || level == ALL)

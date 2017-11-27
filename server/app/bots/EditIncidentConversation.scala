@@ -15,6 +15,7 @@ import shared._
 
 import scala.concurrent.ExecutionContext
 import scala.util.Try
+import AuditAction._
 
 // @formatter:off
 /**
@@ -116,7 +117,8 @@ class EditIncidentConversation(incidentActor: ActorRef)
           Try(IncidentStatus.statusFrom(statusName))
             .map { st =>
               bot.sendMessage(msg, s"We changed the status to $st.")
-              val newData = incidentData.copy(status = st)
+              val newData = incidentData.copy(status = st
+                , audits = Audit(extractUser(msg), statusChanged) :: incidentData.audits)
               lastStep(msg, newData)
               goto(SelectAction) using newData
             }.recover {
@@ -139,7 +141,8 @@ class EditIncidentConversation(incidentActor: ActorRef)
           Try(IncidentLevel.levelFrom(levelName))
             .map { le =>
               bot.sendMessage(msg, s"We changed the level to $le.")
-              val newData = incidentData.copy(level = le)
+              val newData = incidentData.copy(level = le
+                , audits = Audit(extractUser(msg), levelChanged) :: incidentData.audits)
               lastStep(msg, newData)
               goto(SelectAction) using newData
             }.recover {
@@ -162,7 +165,8 @@ class EditIncidentConversation(incidentActor: ActorRef)
         case Some((fileId, path)) =>
           // if the user added a photo - she can add more photos
           bot.sendMessage(msg, "Ok, just add another Photo or finish the Report.")
-          val newData = incidentData.copy(assets = Asset(fileId, path) :: incidentData.assets)
+          val newData = incidentData.copy(assets = Asset(fileId, path) :: incidentData.assets
+            , audits = Audit(extractUser(msg), photoAdded) :: incidentData.audits)
           lastStep(msg, newData)
           // async: the result is send to itself (ChatConversation) - the uploaded photo is added to the state.
           self ! ExecutionResult(SelectAction, newData)
