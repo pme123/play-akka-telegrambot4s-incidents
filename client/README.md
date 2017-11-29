@@ -158,6 +158,25 @@ This is the hardest. Here is a step-by-step example:
 And here an explanation: 
 [Stackoverflow](https://stackoverflow.com/questions/42498968/when-i-use-binding-scala-i-got-the-error-each-instructions-must-be-inside-a-sd/42498969#42498969)
 
- 
-If you have troubles understanding it, please check out [Binding.scala-Google-Maps](https://github.com/pme123/Binding.scala-Google-Maps), where I explained all the details.
+### xml.Elem versus ``
+The Macro of Binding.scala creates from an xml.Elem a Binding[HtmlElement].
+
+```scala
+@dom
+def tagOption(l: IncidentTag, selected: IncidentTag)  = {
+    <option value={l.name} selected={l == selected}>
+      {l.label}
+    </option>
+  }
+```
+`<option></option>` is clearly a `xml.Elem`, but with `@dom` it gets to `Binding[HtmlElement]`.
+
+This needs the help of `implicits`: 
+I added the following line in the `trait IncidentImplicits`:
+
+`implicit def makeIntellijHappy(x: scala.xml.Elem): Binding[HTMLElement] = ???`
+
+It does not need an implementation, as the macro will fix that - so it is only needed to make Intellij happy.
+
+If you have troubles understanding it, please check also [Binding.scala-Google-Maps](https://github.com/pme123/Binding.scala-Google-Maps), where I explained all the details.
 

@@ -17,9 +17,10 @@ We implemented 2 Conversations:
 ## 1. Create an incident
 They will report an incident to a Telegram Bot with their mobile phones: 
 1. select type of incident.
-2. add a textual description.
-3. add optional photos.
-4. send the incident.
+1. select level of incident (urgency).
+1. add a textual description.
+1. add optional photos.
+1. send the incident.
 
 ![incident](https://user-images.githubusercontent.com/3437927/33361929-5ff44212-d4da-11e7-8fcc-657815a0b45c.gif)
 
@@ -28,8 +29,7 @@ They will report an incident to a Telegram Bot with their mobile phones:
 2. select an edit action.
 3. do the change.
 
-![incidentedit](https://user-images.githubusercontent.com/3437927/33361936-66f32984-d4da-11e7-83cf-bf770cc094ca.gif)
-
+![incidentedit](https://user-images.githubusercontent.com/3437927/33364230-c419af08-d4e3-11e7-9308-2120ff6605fe.gif)
 ## Control Panel
 
 A web-page shows all incidents - the newest on top. To see the attached images you open a detail view.
@@ -40,9 +40,13 @@ Let's start with the simple parts:
 # Shared model
 The great thing about a **full-stack Scala app** is that we only have to define our domain model once for the server and the client.
 
-Next to the model all that is needed is the JSON-un-/-marshalling. Thanks to the [Play JSON Derived Codecs](https://github.com/julienrf/play-json-derived-codecs) this involves only a few lines of code.
+## Client-Server Communication
+Next to the model all that is needed is the JSON-un-/-marshalling. 
+If we use ADTs (Algebraic Data Types - `sealed traits` in Scala) in combination with case classes this requires only a few lines of code.
 
-Here is the whole class: [SharedMessages](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/shared/src/main/scala/shared/SharedMessages.scala)
+* Here the Thanks goes to: [Play JSON Derived Codecs](https://github.com/julienrf/play-json-derived-codecs)
+
+Here is an example how that looks: [SharedMessages](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/shared/src/main/scala/shared/SharedMessages.scala)
 
 ## Handling dates
 Dates are handled differently on JVM and JS. 
@@ -97,6 +101,8 @@ Always start with a description of your conversation;)
   *       v                  |
   *   [SelectIncidentType]   |
   *       v                  |
+  *   [SelectIncidentLevel]  |
+  *       v                  |
   *    [AddDescription]      |
   *       v                  |
   *   [AddAdditionalInfo] <--|
@@ -135,7 +141,7 @@ Let's go through all states.
           // ask the user for a description, as it is a text input no markup is needed. 
           bot.sendMessage(msg, "Add a description:")
           // when we go to the next step we add the IncidentType to the FSM.
-          goto(AddDescription) using IncidentTypeData(IncidentType.from(data))
+          goto(SelectIncidentType) using IncidentTypeData(IncidentType.from(data))
         case None =>
           // when the user does not press a button - remind the user what we need
           bot.sendMessage(msg, "First you have to select the incident type!"
@@ -145,6 +151,9 @@ Let's go through all states.
       }
   }
 ```
+
+### SelectIncidentLevel
+Analog SelectIncidentType
 
 ### AddDescription
 ```scala

@@ -21,6 +21,8 @@ import scala.concurrent.ExecutionContext
   *       v                  |
   *   [SelectIncidentType]   |
   *       v                  |
+  *   [SelectIncidentLevel]  |
+  *       v                  |
   *    [AddDescription]      |
   *       v                  |
   *   [AddAdditionalInfo] <--|
