@@ -54,8 +54,6 @@ case class IncidentsHeader(uiState: UIState)
   // this creates a compile exception in intellij
   @dom
   private def levelFilter = {
-    implicit def stringToBoolean(str: String): Boolean = str == "true"
-
     <div class="ui item"
          data:data-tooltip="Filter the Incidents by its Level"
          data:data-position="bottom right">
@@ -89,8 +87,6 @@ case class IncidentsHeader(uiState: UIState)
 
   @dom
   private def typeFilter = {
-    implicit def stringToBoolean(str: String): Boolean = str == "true"
-
     <div class="ui item"
          data:data-tooltip="Filter the Incidents by its Level"
          data:data-position="bottom right">

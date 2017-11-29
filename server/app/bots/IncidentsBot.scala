@@ -70,7 +70,7 @@ trait IncidentsBot {
         , incident.incidentType
         , incident.descr
         , incident.assets
-        , Audit(user) :: incident.audits)
+        , incident.audits)
   }
 
 }

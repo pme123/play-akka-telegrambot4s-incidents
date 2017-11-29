@@ -1,4 +1,5 @@
 # Telegram Bot with Play Framework, Akka FSM, Scala.js, Binding.scala
+**This is work in progress.**
 
 This project is based on:
 1. [Telegram Bot Demo with Scala/ Play](https://github.com/pme123/play-scala-telegrambot4s)
@@ -11,15 +12,28 @@ In this example I want to combine everything from the 2. project above and exten
 # Business Case
 We want to have an overview of incidents that are reported by caretakers.
  
+We implemented 2 Conversations:
+
+## 1. Create an incident
 They will report an incident to a Telegram Bot with their mobile phones: 
 1. select type of incident.
 2. add a textual description.
 3. add optional photos.
 4. send the incident.
 
-A web-page shows all incidents - the newest on top. To see the attached images you open a detail view.
+![incident](https://user-images.githubusercontent.com/3437927/33361929-5ff44212-d4da-11e7-8fcc-657815a0b45c.gif)
 
-![play-akka-telegram4s-incidents](https://user-images.githubusercontent.com/3437927/32769750-6d5ab8aa-c91d-11e7-867c-05a8d1227317.gif)
+## 2. Edit an incident
+1. send an ident.
+2. select an edit action.
+3. do the change.
+
+![incidentedit](https://user-images.githubusercontent.com/3437927/33361936-66f32984-d4da-11e7-83cf-bf770cc094ca.gif)
+
+## Control Panel
+
+A web-page shows all incidents - the newest on top. To see the attached images you open a detail view.
+You can filter and sort the incidents (see images above).
 
 Let's start with the simple parts:
 
@@ -30,6 +44,29 @@ Next to the model all that is needed is the JSON-un-/-marshalling. Thanks to the
 
 Here is the whole class: [SharedMessages](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/shared/src/main/scala/shared/SharedMessages.scala)
 
+## Handling dates
+Dates are handled differently on JVM and JS. 
+`scalajs-java-time` provides an implementation of `java.time`. 
+This allows to have to work with Instants on both sides (Be aware not everything is supported).
+```scala
+case class Audit(user: String
+                 , dateTime: Instant = Instant.now()
+                )
+```
+The JSON marshalling is now not too hard:
+```scala
+implicit val localInstantReads: Reads[Instant] =
+    (json: JsValue) => {
+      json.validate[Long]
+        .map { epochSecond =>
+          Instant.ofEpochSecond(epochSecond)
+        }
+    }
+
+implicit val localInstantWrites: Writes[Instant] =
+    (instant: Instant) => JsNumber(instant.getEpochSecond)
+
+```
 # Client
 Has its own [README](client/README.md)
 
@@ -165,7 +202,11 @@ Let's go through all states.
       }
   }
 ```
-Here the whole class: [`IncidentConversation`](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/server/app/bots/IncidentConversation.scala)
+Here the whole class: 
+[`IncidentConversation`](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/server/app/bots/IncidentConversation.scala)
+
+The 2. conversation you find here: 
+[`EditIncidentConversation`](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/server/app/bots/EditIncidentConversation.scala)
 
 # Run the application
 ```shell

@@ -37,7 +37,7 @@ case class Audit(user: String
 
 object Audit {
 
-  implicit val localDateTimeReads: Reads[Instant] =
+  implicit val localInstantReads: Reads[Instant] =
     (json: JsValue) => {
       json.validate[Long]
         .map { epochSecond =>
@@ -45,7 +45,7 @@ object Audit {
         }
     }
 
-  implicit val localDateTimeWrites: Writes[Instant] =
+  implicit val localInstantWrites: Writes[Instant] =
     (instant: Instant) => JsNumber(instant.getEpochSecond)
 
   implicit val jsonFormat: OFormat[Audit] = derived.oformat[Audit]()

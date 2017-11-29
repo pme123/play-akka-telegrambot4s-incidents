@@ -101,7 +101,7 @@ private[client] case class IncidentDetailView(incident: Incident, uiState: UISta
   @dom
   private def renderImage(asset: Asset) = {
     <div class="image content">
-      <img src={asset.path}></img>
+      <img src={asset.path}/>
     </div>
   }
 
