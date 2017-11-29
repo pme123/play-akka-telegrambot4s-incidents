@@ -158,7 +158,7 @@ This is the hardest. Here is a step-by-step example:
 And here an explanation: 
 [Stackoverflow](https://stackoverflow.com/questions/42498968/when-i-use-binding-scala-i-got-the-error-each-instructions-must-be-inside-a-sd/42498969#42498969)
 
-### xml.Elem versus ``
+### xml.Elem versus Binding[HtmlElement]
 The Macro of Binding.scala creates from an xml.Elem a Binding[HtmlElement].
 
 ```scala
