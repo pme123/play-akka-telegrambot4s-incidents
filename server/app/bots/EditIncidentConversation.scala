@@ -15,6 +15,7 @@ import shared._
 
 import scala.concurrent.ExecutionContext
 import scala.util.Try
+import AuditAction._
 
 // @formatter:off
 /**
@@ -56,8 +57,9 @@ class EditIncidentConversation(incidentActor: ActorRef)
         case Some(ident) =>
           (incidentActor ? IncidentIdent(ident)).map {
             case Some(incident: Incident) =>
+              val user: String = extractUser(msg)
               bot.sendMessage(msg, s"Ok what do you want to do?", editIncidentMarkup)
-              self ! ExecutionResult(SelectAction, IncidentData(incident))
+              self ! ExecutionResult(SelectAction, IncidentData(user, incident))
             case Some(other) =>
               other match {
                 case Success(unexpected) =>
@@ -87,15 +89,15 @@ class EditIncidentConversation(incidentActor: ActorRef)
     case Event(Command(msg, callbackData: Option[String]), incidentData: IncidentData) =>
       // now we check the callback data
       callbackData match {
-        case Some(changeStatus.name) =>
+        case Some(CHANGE_STATUS.name) =>
           bot.sendMessage(msg, s"Change the Incident Status from ${incidentData.status}:"
             , statusMarkup(incidentData))
           goto(ChangeStatus) using incidentData
-        case Some(changeLevel.name) =>
+        case Some(CHANGE_LEVEL.name) =>
           bot.sendMessage(msg, s"Change the Incident Level from ${incidentData.level}:"
             , levelMarkup(incidentData))
           goto(ChangeLevel) using incidentData
-        case Some(addPhoto.name) =>
+        case Some(CHANGE_PHOTO.name) =>
           // ask the user for a description, as it is a text input no markup is needed.
           bot.sendMessage(msg, s"Add another photo")
           goto(AddPhoto) using incidentData
@@ -115,7 +117,8 @@ class EditIncidentConversation(incidentActor: ActorRef)
           Try(IncidentStatus.statusFrom(statusName))
             .map { st =>
               bot.sendMessage(msg, s"We changed the status to $st.")
-              val newData = incidentData.copy(status = st)
+              val newData = incidentData.copy(status = st
+                , audits = Audit(extractUser(msg), statusChanged) :: incidentData.audits)
               lastStep(msg, newData)
               goto(SelectAction) using newData
             }.recover {
@@ -138,7 +141,8 @@ class EditIncidentConversation(incidentActor: ActorRef)
           Try(IncidentLevel.levelFrom(levelName))
             .map { le =>
               bot.sendMessage(msg, s"We changed the level to $le.")
-              val newData = incidentData.copy(level = le)
+              val newData = incidentData.copy(level = le
+                , audits = Audit(extractUser(msg), levelChanged) :: incidentData.audits)
               lastStep(msg, newData)
               goto(SelectAction) using newData
             }.recover {
@@ -161,7 +165,8 @@ class EditIncidentConversation(incidentActor: ActorRef)
         case Some((fileId, path)) =>
           // if the user added a photo - she can add more photos
           bot.sendMessage(msg, "Ok, just add another Photo or finish the Report.")
-          val newData = incidentData.copy(assets = Asset(fileId, path) :: incidentData.assets)
+          val newData = incidentData.copy(assets = Asset(fileId, path) :: incidentData.assets
+            , audits = Audit(extractUser(msg), photoAdded) :: incidentData.audits)
           lastStep(msg, newData)
           // async: the result is send to itself (ChatConversation) - the uploaded photo is added to the state.
           self ! ExecutionResult(SelectAction, newData)
@@ -177,19 +182,32 @@ class EditIncidentConversation(incidentActor: ActorRef)
 
   private lazy val editIncidentMarkup = Some(incidentTagSelector(IncidentEditAction.all))
 
+  trait IncidentEditAction extends IncidentTag
+
   object IncidentEditAction {
     type IncidentEditAction = IncidentTag
 
-    val changeStatus: IncidentEditAction = IncidentTag("changeStatus", "Change Status")
-    val changeLevel: IncidentEditAction = IncidentTag("changeLevel", "Change Level")
-    val addPhoto: IncidentEditAction = IncidentTag("addPhoto", "add Photo")
+    case object CHANGE_STATUS extends IncidentEditAction {
+      val name = "changeStatus"
+      override val label = "Change Status"
+    }
 
-    val all = Seq(changeStatus, changeLevel, addPhoto)
+    case object CHANGE_LEVEL extends IncidentEditAction {
+      val name = "changeLevel"
+      override val label = "Change Level"
+    }
+
+    case object CHANGE_PHOTO extends IncidentEditAction {
+      val name = "addPhoto"
+      override val label = "add Photo"
+    }
+
+    val all = Seq(CHANGE_STATUS, CHANGE_LEVEL, CHANGE_PHOTO)
 
     def actionFrom(name: String): IncidentEditAction = name match {
-      case changeStatus.name => changeStatus
-      case changeLevel.name => changeLevel
-      case addPhoto.name => addPhoto
+      case CHANGE_STATUS.name => CHANGE_STATUS
+      case CHANGE_LEVEL.name => CHANGE_LEVEL
+      case CHANGE_PHOTO.name => CHANGE_PHOTO
       case other => throw new IllegalArgumentException(s"Unsupported IncidentLevel: $other")
     }
   }

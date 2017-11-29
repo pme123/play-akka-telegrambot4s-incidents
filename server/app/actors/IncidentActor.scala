@@ -1,5 +1,6 @@
 package actors
 
+import java.time.Instant
 import javax.inject.Inject
 
 import actors.IncidentActor.{IncidentIdent, SubscribeIncident, UnSubscribeIncident}
@@ -7,7 +8,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingReceive
 import akka.stream.Materializer
 import shared.IncidentMsg.{IncidentHistory, NewIncident}
-import shared.{Incident, IncidentMsg, IncidentLevel, IncidentType}
+import shared._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
@@ -22,7 +23,17 @@ class IncidentActor @Inject()(implicit mat: Materializer, ec: ExecutionContext)
 
   private val incidents: mutable.ListBuffer[Incident] = mutable.ListBuffer()
 
-  incidents += Incident("dEr4s", IncidentLevel.URGENT, IncidentType.Garage, "Problem with the light.")
+  incidents += Incident("dEr4s", IncidentLevel.URGENT, IncidentType.Garage, "Problem with the light."
+    , IncidentStatus.IN_PROGRESS, audits = List(Audit("Peter Starck (pstark)", AuditAction.statusChanged)
+      , Audit("Hans (hans123)", AuditAction.levelChanged), Audit("unknown user")))
+  incidents += Incident("r5hTr", IncidentLevel.MEDIUM, IncidentType.Elevator, "Strange noise when running."
+    , audits = List(Audit("Peter Starck (pstark)")))
+  incidents += Incident("pT444", IncidentLevel.INFO, IncidentType.Other, "Loud music after 22:00h in Apartment 23c."
+    , audits = List(Audit("Peter Starck (pstark)")))
+  incidents += Incident("aZbcR", IncidentLevel.URGENT, IncidentType.Heating, "We are freezing! Fam. Meier from the house 23 on level 23."
+    , audits = List(Audit("Peter Starck (pstark)")))
+  incidents += Incident("ZrW36", IncidentLevel.MEDIUM, IncidentType.Water, "Cold water in the bathroom of 45c.", IncidentStatus.DONE
+    , audits = List(Audit("Peter Starck (pstark)")))
 
   // a map with all clients (Websocket-Actor) that needs the status about the process
   private val clientActors: mutable.Map[String, ActorRef] = mutable.Map()

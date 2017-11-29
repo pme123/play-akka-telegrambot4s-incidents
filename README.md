@@ -1,4 +1,5 @@
 # Telegram Bot with Play Framework, Akka FSM, Scala.js, Binding.scala
+**This is work in progress.**
 
 This project is based on:
 1. [Telegram Bot Demo with Scala/ Play](https://github.com/pme123/play-scala-telegrambot4s)
@@ -11,35 +12,67 @@ In this example I want to combine everything from the 2. project above and exten
 # Business Case
 We want to have an overview of incidents that are reported by caretakers.
  
+We implemented 2 Conversations:
+
+## 1. Create an incident
 They will report an incident to a Telegram Bot with their mobile phones: 
 1. select type of incident.
-2. add a textual description.
-3. add optional photos.
-4. send the incident.
+1. select level of incident (urgency).
+1. add a textual description.
+1. add optional photos.
+1. send the incident.
+
+![incident](https://user-images.githubusercontent.com/3437927/33361929-5ff44212-d4da-11e7-8fcc-657815a0b45c.gif)
+
+## 2. Edit an incident
+1. send an ident.
+2. select an edit action.
+3. do the change.
+
+![incidentedit](https://user-images.githubusercontent.com/3437927/33364230-c419af08-d4e3-11e7-9308-2120ff6605fe.gif)
+## Control Panel
 
 A web-page shows all incidents - the newest on top. To see the attached images you open a detail view.
-
-![play-akka-telegram4s-incidents](https://user-images.githubusercontent.com/3437927/32769750-6d5ab8aa-c91d-11e7-867c-05a8d1227317.gif)
+You can filter and sort the incidents (see images above).
 
 Let's start with the simple parts:
 
 # Shared model
 The great thing about a **full-stack Scala app** is that we only have to define our domain model once for the server and the client.
 
-Next to the model all that is needed is the JSON-un-/-marshalling. Thanks to the [Play JSON Derived Codecs](https://github.com/julienrf/play-json-derived-codecs) this involves only a few lines of code.
+## Client-Server Communication
+Next to the model all that is needed is the JSON-un-/-marshalling. 
+If we use ADTs (Algebraic Data Types - `sealed traits` in Scala) in combination with case classes this requires only a few lines of code.
 
-Here is the whole class: [SharedMessages](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/shared/src/main/scala/shared/SharedMessages.scala)
+* Here the Thanks goes to: [Play JSON Derived Codecs](https://github.com/julienrf/play-json-derived-codecs)
 
+Here is an example how that looks: [SharedMessages](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/shared/src/main/scala/shared/SharedMessages.scala)
+
+## Handling dates
+Dates are handled differently on JVM and JS. 
+`scalajs-java-time` provides an implementation of `java.time`. 
+This allows to have to work with Instants on both sides (Be aware not everything is supported).
+```scala
+case class Audit(user: String
+                 , dateTime: Instant = Instant.now()
+                )
+```
+The JSON marshalling is now not too hard:
+```scala
+implicit val localInstantReads: Reads[Instant] =
+    (json: JsValue) => {
+      json.validate[Long]
+        .map { epochSecond =>
+          Instant.ofEpochSecond(epochSecond)
+        }
+    }
+
+implicit val localInstantWrites: Writes[Instant] =
+    (instant: Instant) => JsNumber(instant.getEpochSecond)
+
+```
 # Client
-Once again it's build with [Binding.scala](https://github.com/ThoughtWorksInc/Binding.scala)
-
-Thanks to that, the code fits in 150 lines: [IncidentClient](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/client/src/main/scala/client/IncidentClient.scala)
-
-It is more or less HTML-snippets that contain dynamic content provided by Binding.scala:
-* `Vars[Incident]` hosts all reported incidents.
-* `Var[Option[Incident]]` is set if a User wants to see a detail of an incident.
-
-If you have troubles understanding it, please check out [Binding.scala-Google-Maps](https://github.com/pme123/Binding.scala-Google-Maps), where I explained all the details.
+Has its own [README](client/README.md)
 
 # Server
 The server part can be split into the following sub-chapters:
@@ -67,6 +100,8 @@ Always start with a description of your conversation;)
   *     [Idle]  <-------------
   *       v                  |
   *   [SelectIncidentType]   |
+  *       v                  |
+  *   [SelectIncidentLevel]  |
   *       v                  |
   *    [AddDescription]      |
   *       v                  |
@@ -106,7 +141,7 @@ Let's go through all states.
           // ask the user for a description, as it is a text input no markup is needed. 
           bot.sendMessage(msg, "Add a description:")
           // when we go to the next step we add the IncidentType to the FSM.
-          goto(AddDescription) using IncidentTypeData(IncidentType.from(data))
+          goto(SelectIncidentType) using IncidentTypeData(IncidentType.from(data))
         case None =>
           // when the user does not press a button - remind the user what we need
           bot.sendMessage(msg, "First you have to select the incident type!"
@@ -116,6 +151,9 @@ Let's go through all states.
       }
   }
 ```
+
+### SelectIncidentLevel
+Analog SelectIncidentType
 
 ### AddDescription
 ```scala
@@ -173,7 +211,11 @@ Let's go through all states.
       }
   }
 ```
-Here the whole class: [`IncidentConversation`](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/server/app/bots/IncidentConversation.scala)
+Here the whole class: 
+[`IncidentConversation`](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/server/app/bots/IncidentConversation.scala)
+
+The 2. conversation you find here: 
+[`EditIncidentConversation`](https://github.com/pme123/play-akka-telegrambot4s-incidents/blob/simple-example/server/app/bots/EditIncidentConversation.scala)
 
 # Run the application
 ```shell

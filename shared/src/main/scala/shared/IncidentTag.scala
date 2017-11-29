@@ -3,27 +3,59 @@ package shared
 import julienrf.json.derived
 import play.api.libs.json.OFormat
 
-case class IncidentTag(name: String, labelOpt: Option[String] = None) {
-  require(name != null && name.length >= 3, "A name is required to have at least 3 characters")
-  val label: String = labelOpt.getOrElse(name)
+trait IncidentTag {
+  def name: String
+
+  def label: String = name
+
+ // require(name != null && name.length >= 3, "A name is required to have at least 3 characters")
+
+  // by default filter all
+  def filter(level: IncidentTag): Boolean = true
+
 }
 
 object IncidentTag {
 
-  implicit val jsonFormat: OFormat[IncidentTag] = derived.oformat[IncidentTag]()
+  case object ALL extends IncidentTag {
+    val name = "ALL"
+  }
 
-  def apply(name: String, label: String): IncidentTag = IncidentTag(name, Some(label))
+  //implicit lazy val jsonFormat: OFormat[IncidentTag] = derived.oformat[IncidentTag]()
+}
+
+sealed trait IncidentType extends IncidentTag {
+
+  override def filter(level: IncidentTag): Boolean = level == this
+
+  def isBefore(incType: IncidentType): Boolean = name.compareTo(incType.name) <= 0
+
 }
 
 object IncidentType {
 
-  type IncidentType = IncidentTag
+  case object Heating extends IncidentType {
+    val name = "Heating"
 
-  val Heating: IncidentType = IncidentTag("Heating")
-  val Water: IncidentType = IncidentTag("Water")
-  val Elevator: IncidentType = IncidentTag("Elevator")
-  val Garage: IncidentType = IncidentTag("Garage")
-  val Other: IncidentType = IncidentTag("Other")
+  }
+
+  case object Water extends IncidentType {
+    val name = "Water"
+  }
+
+  case object Elevator extends IncidentType {
+    val name = "Elevator"
+  }
+
+  case object Garage extends IncidentType {
+    val name = "Garage"
+  }
+
+  case object Other extends IncidentType {
+    val name = "Other"
+  }
+
+  val all = Seq(Heating, Water, Elevator, Garage, Other)
 
   def typeFrom(name: String): IncidentType = name match {
     case Heating.name => Heating
@@ -34,15 +66,40 @@ object IncidentType {
     case other => throw new IllegalArgumentException(s"Unsupported IncidentType: $other")
   }
 
+  implicit val jsonFormat: OFormat[IncidentType] = derived.oformat[IncidentType]()
+
 }
 
+sealed trait IncidentStatus extends IncidentTag {
+  def isBefore(status: IncidentStatus): Boolean
+}
 
 object IncidentStatus {
-  type IncidentStatus = IncidentTag
 
-  val OPEN: IncidentStatus = IncidentTag("OPEN")
-  val IN_PROGRESS: IncidentStatus = IncidentTag("IN_PROGRESS", Some("IN PROGRESS"))
-  val DONE: IncidentStatus = IncidentTag("DONE")
+  case object OPEN extends IncidentStatus {
+    val name = "OPEN"
+
+    def isBefore(status: IncidentStatus): Boolean = true
+  }
+
+  case object IN_PROGRESS extends IncidentStatus {
+    val name = "IN_PROGRESS"
+    override val label = "IN PROGRESS"
+
+    override def filter(status: IncidentTag): Boolean = status != OPEN
+
+    def isBefore(status: IncidentStatus): Boolean = status != OPEN
+
+  }
+
+  case object DONE extends IncidentStatus {
+    val name = "DONE"
+
+    override def filter(status: IncidentTag): Boolean = status == DONE
+
+    def isBefore(status: IncidentStatus): Boolean = false
+
+  }
 
   val all = Seq(OPEN, IN_PROGRESS, DONE)
 
@@ -52,14 +109,38 @@ object IncidentStatus {
     case DONE.name => DONE
     case other => throw new IllegalArgumentException(s"Unsupported IncidentStatus: $other")
   }
+
+  implicit val jsonFormat: OFormat[IncidentStatus] = derived.oformat[IncidentStatus]()
+
+}
+
+sealed trait IncidentLevel extends IncidentTag {
+  def isBefore(level: IncidentLevel): Boolean
 }
 
 object IncidentLevel {
-  type IncidentLevel = IncidentTag
 
-  val URGENT: IncidentLevel = IncidentTag("URGENT")
-  val MEDIUM: IncidentLevel = IncidentTag("MEDIUM")
-  val INFO: IncidentLevel = IncidentTag("INFO")
+  case object URGENT extends IncidentLevel {
+    val name = "URGENT"
+
+    def isBefore(level: IncidentLevel): Boolean = true
+  }
+
+  case object MEDIUM extends IncidentLevel {
+    val name = "MEDIUM"
+
+    override def filter(level: IncidentTag): Boolean = level != URGENT
+
+    def isBefore(level: IncidentLevel): Boolean = level == INFO
+  }
+
+  case object INFO extends IncidentLevel {
+    val name = "INFO"
+
+    override def filter(level: IncidentTag): Boolean = level == INFO
+
+    def isBefore(level: IncidentLevel): Boolean = false
+  }
 
   def all = Seq(INFO, MEDIUM, URGENT)
 
@@ -69,4 +150,7 @@ object IncidentLevel {
     case INFO.name => INFO
     case other => throw new IllegalArgumentException(s"Unsupported IncidentLevel: $other")
   }
+
+  implicit val jsonFormat: OFormat[IncidentLevel] = derived.oformat[IncidentLevel]()
+
 }
